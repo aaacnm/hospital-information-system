@@ -110,7 +110,7 @@ npx playwright install chromium
 npm test
 ```
 
-当前最近一次完整验证：后端/契约 `22 passed`，前端 Vitest `15 passed`，Playwright 主流程 `1 passed`。`python-jose` 的弃用警告已记录，不影响断言结果；发布前仍以 CI 最新结果和 Docker 构建证据为准。
+当前最近一次完整验证：后端/契约 `22 passed`，前端 Vitest `16 passed`，Playwright 主流程 `1 passed`。`python-jose` 的弃用警告已记录，不影响断言结果；发布前仍以 CI 最新结果和 Docker 构建证据为准。
 
 ## Docker 和 CI
 
@@ -126,6 +126,7 @@ CI 在 push/PR 上执行根目录 pytest、后端 Ruff 和测试、前端 lint/t
 
 ## 课程验收材料
 
+- [课程验收材料包总入口](docs/course-acceptance/README.md)
 - [最终验收清单](docs/final-acceptance-checklist.md)
 - [7 分钟演示脚本](docs/demo-script.md)
 - [AI 医疗合规说明](docs/ai-compliance.md)

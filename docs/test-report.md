@@ -26,7 +26,7 @@ python -m pytest -q
 前端和浏览器验收：
 
 ```text
-npm run test --prefix frontend       # 15 passed
+npm run test --prefix frontend       # 16 passed
 Set-Location tests/e2e; npm test     # 1 passed
 ```
 

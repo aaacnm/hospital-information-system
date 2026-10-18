@@ -11,6 +11,7 @@ const navigation: NavigationItem[] = [
   { label: '收费台', path: '/billing', roles: ['admin', 'cashier'] },
   { label: '药房发药', path: '/dispensing', roles: ['admin', 'pharmacist'] },
   { label: '审计日志', path: '/audit-logs', roles: ['admin'] },
+  { label: '智能分诊', path: '/triage', roles: ['admin', 'doctor', 'cashier', 'pharmacist'] },
 ];
 
 export function AppLayout() {

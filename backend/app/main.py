@@ -11,6 +11,7 @@ from app.db import Base, engine, get_db
 from app.routers.admin import router as admin_router
 from app.routers.auth import router as auth_router
 from app.routers.business import router as business_router
+from app.routers.triage import router as triage_router
 
 
 @asynccontextmanager
@@ -32,6 +33,7 @@ app.add_middleware(
 app.include_router(auth_router)
 app.include_router(admin_router)
 app.include_router(business_router)
+app.include_router(triage_router)
 
 
 @app.get("/health", tags=["system"])

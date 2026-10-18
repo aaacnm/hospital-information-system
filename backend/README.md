@@ -49,6 +49,20 @@ python -m uvicorn app.main:app --reload --port 8000
 - `POST /api/drugs/import`：管理员上传 UTF-8/GBK CSV，返回逐行成功/失败明细。
 - `POST /api/registrations/{id}/cancel`：未进入处方流程的挂号取消并释放号源。
 - `GET /api/reports/today`：管理员查询今日挂号量、收费金额和发药量。
+- `POST /api/triage`：登录用户可获取辅助分诊建议；仅返回允许的科室和优先级，不诊断、不自动开药，失败时返回全科门诊兜底。
+
+### 可选 AI provider
+
+默认 `AI_PROVIDER=disabled`，不会发起外部请求。仅在明确配置 provider 时启用兼容 OpenAI Chat Completions 的服务：
+
+```text
+AI_PROVIDER=disabled|openai|openai_compatible
+AI_API_KEY=
+AI_BASE_URL=https://api.openai.com/v1
+AI_MODEL=gpt-4o-mini
+```
+
+密钥只允许来自环境变量或云平台 Secret，不能写入代码、前端或 Git。调用超时固定为 10 秒，网络异常、空输入、恶意提示词或 JSON 不符合契约时返回固定“全科门诊”结果。所有返回都包含“仅供参考，请以医生诊断为准”，AI 不得诊断、开药或修改收费结果。
 
 ## 数据库迁移
 

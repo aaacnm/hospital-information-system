@@ -2,7 +2,7 @@
 
 ## 当前状态
 
-当前工作区已具备 FastAPI 和 React 工程，并有挂号、处方、收费、库存和发药的可验收 MVP 闭环。扩展功能（取消挂号、CSV 导入、统计和 AI 分诊）仍不在本轮测试结论中。
+当前工作区已具备 FastAPI 和 React 工程，并有挂号、处方、收费、库存和发药的可验收 MVP 闭环；AI 分诊扩展也有接口、页面和 provider 失败兜底测试。取消挂号、CSV 导入和统计仍属于扩展能力。
 
 当前可运行的测试入口包括项目契约、后端 API、前端 Vitest 和 Playwright 浏览器验收：
 
@@ -16,16 +16,17 @@ python -m pytest -q
 最近一次本地验证：
 
 ```text
-python -m pytest -q tests backend/tests
-18 passed, 40 warnings
+python -m pytest --collect-only -q
+python -m pytest -q
+22 passed
 ```
 
-18 个后端/契约用例包含项目契约、health/认证接口以及挂号、处方、收费回滚、发药、角色边界和号源冲突。40 个警告来自 `python-jose` 内部使用已弃用的 `datetime.utcnow()`，不影响本次断言结果，后续应在依赖升级或安全评审中处理。
+22 个后端/契约用例包含项目契约、health/认证、挂号、处方、收费回滚、发药、角色边界、CSV、取消挂号、统计和 AI 分诊；当前后端测试已修复并通过。40 个警告来自 `python-jose` 内部使用已弃用的 `datetime.utcnow()`，后续应在依赖升级或安全评审中处理。
 
 前端和浏览器验收：
 
 ```text
-npm run test --prefix frontend       # 12 passed
+npm run test --prefix frontend       # 15 passed
 Set-Location tests/e2e; npm test     # 1 passed
 ```
 

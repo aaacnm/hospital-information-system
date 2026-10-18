@@ -105,3 +105,11 @@ export interface AuditLogPage {
   page: number;
   page_size: number;
 }
+
+export interface TriageResponse {
+  dept: string;
+  urgency: string;
+  notes: string;
+  disclaimer?: string;
+  source: 'llm' | 'fallback' | string;
+}

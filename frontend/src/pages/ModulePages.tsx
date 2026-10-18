@@ -1,6 +1,6 @@
 import { useState, type FormEvent, type ReactNode } from 'react';
 import { ApiError, apiClient } from '../api/client';
-import type { AuditLogPage, Charge, Dispense, Prescription, Registration, Schedule } from '../api/types';
+import type { AuditLogPage, Charge, Dispense, Prescription, Registration, Schedule, TriageResponse } from '../api/types';
 import { StatusMessage } from '../components/StatusMessage';
 
 function errorTitle(reason: unknown): string {
@@ -73,6 +73,23 @@ export function AuditLogsPage() {
   const [result, setResult] = useState<AuditLogPage | null>(null); const [error, setError] = useState<unknown>(null); const [loading, setLoading] = useState(false);
   async function load() { setLoading(true); setError(null); try { setResult(await apiClient.get<AuditLogPage>('/audit-logs?page=1&page_size=50')); } catch (reason) { setError(reason); } finally { setLoading(false); } }
   return <section className="page-section"><div className="page-heading"><div><p className="eyebrow">业务模块 · F11</p><h1>审计日志</h1><p className="page-description">管理员查询服务端记录的登录、挂号、处方、收费和发药操作。</p></div><button className="button button-primary" type="button" onClick={load} disabled={loading}>{loading ? '查询中…' : '刷新日志'}</button></div>{error ? <RequestError reason={error} /> : null}{result && result.items.length === 0 ? <StatusMessage title="暂无审计记录">服务端没有返回日志。</StatusMessage> : null}{result && result.items.length > 0 ? <div className="table-wrap"><table><caption>最近操作（{result.total} 条）</caption><thead><tr><th>时间</th><th>用户 ID</th><th>动作</th><th>资源</th><th>资源 ID</th><th>IP</th></tr></thead><tbody>{result.items.map((item) => <tr key={item.id}><td>{new Date(item.created_at).toLocaleString()}</td><td>{item.user_id ?? '—'}</td><td><code>{item.action}</code></td><td>{item.resource_type || '—'}</td><td>{item.resource_id || '—'}</td><td>{item.ip || '—'}</td></tr>)}</tbody></table></div> : null}</section>;
+}
+
+export function TriagePage() {
+  const [symptoms, setSymptoms] = useState('');
+  const [result, setResult] = useState<TriageResponse | null>(null);
+  const [error, setError] = useState<unknown>(null);
+  const [loading, setLoading] = useState(false);
+
+  async function submit(event: FormEvent) {
+    event.preventDefault(); setLoading(true); setError(null); setResult(null);
+    try { setResult(await apiClient.post<TriageResponse>('/triage', { symptoms: symptoms.trim() })); }
+    catch (reason) { setError(reason); }
+    finally { setLoading(false); }
+  }
+
+  const isFallback = result?.source === 'fallback';
+  return <section className="page-section"><Heading eyebrow="辅助功能 · F16" title="智能分诊" description="根据症状生成候选科室和紧急程度。此功能只提供辅助建议，不诊断、不处方、不改变收费结果。" label="AI 辅助" /><div className="ai-disclaimer">本建议由 AI 生成，仅供参考，请以医生诊断为准。出现急危重症症状时请立即联系急救服务。</div><form className="form-panel triage-form" onSubmit={submit}><Field label="症状描述" hint="请勿输入姓名、身份证号或手机号"><textarea aria-label="症状描述" value={symptoms} onChange={(event) => setSymptoms(event.target.value)} required minLength={2} maxLength={1000} placeholder="例如：昨晚开始发热、咽痛，体温 38.2℃" /></Field><button className="button button-primary" type="submit" disabled={loading}>{loading ? '分析中…' : '获取辅助建议'}</button></form>{error ? <RequestError reason={error} /> : null}{result ? <div className={`triage-result ${isFallback ? 'triage-fallback' : ''}`} role="status"><div className="triage-result-heading"><strong>{isFallback ? '暂未获得 AI 建议' : '已获得辅助建议'}</strong><span>{isFallback ? '系统兜底' : 'AI 返回'}</span></div><dl><div><dt>建议科室</dt><dd>{result.dept}</dd></div><div><dt>紧急程度</dt><dd>{result.urgency}</dd></div><div><dt>说明</dt><dd>{result.notes}</dd></div></dl><p className="triage-result-disclaimer">{result.disclaimer || '本建议由 AI 生成，仅供参考，请以医生诊断为准。'}</p></div> : null}</section>;
 }
 
 function Heading({ eyebrow, title, description, label }: { eyebrow: string; title: string; description: string; label: string }) {

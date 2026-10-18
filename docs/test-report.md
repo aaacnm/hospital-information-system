@@ -2,7 +2,7 @@
 
 ## 当前状态
 
-当前工作区已具备 FastAPI 和 React 工程，并有挂号、处方、收费、库存和发药的可验收 MVP 闭环；AI 分诊扩展也有接口、页面和 provider 失败兜底测试。取消挂号、CSV 导入和统计仍属于扩展能力。
+当前工作区已具备 FastAPI 和 React 工程，并有挂号、处方、收费、库存和发药的可验收 MVP 闭环；AI 分诊扩展也有接口、页面和 provider 失败兜底测试。取消挂号、CSV 导入和统计已实现，并由 `backend/tests/test_business.py` 覆盖；生产 PostgreSQL 迁移及其他扩展能力仍需单独验收。
 
 当前可运行的测试入口包括项目契约、后端 API、前端 Vitest 和 Playwright 浏览器验收：
 
@@ -21,7 +21,7 @@ python -m pytest -q
 22 passed
 ```
 
-22 个后端/契约用例包含项目契约、health/认证、挂号、处方、收费回滚、发药、角色边界、CSV、取消挂号、统计和 AI 分诊；当前后端测试已修复并通过。40 个警告来自 `python-jose` 内部使用已弃用的 `datetime.utcnow()`，后续应在依赖升级或安全评审中处理。
+22 个后端/契约用例包含项目契约、health/认证、挂号、处方、收费回滚、发药、角色边界、CSV、取消挂号、统计和 AI 分诊；当前后端测试已修复并通过。46 个警告来自 `python-jose` 内部使用已弃用的 `datetime.utcnow()`，后续应在依赖升级或安全评审中处理。
 
 前端和浏览器验收：
 
@@ -52,7 +52,7 @@ Playwright 流程实际启动隔离 SQLite 后端和 Vite 前端，并通过浏�
 
 ## 风险与未完成项
 
-- 本轮测试覆盖 MVP 闭环；扩展功能和生产 PostgreSQL 迁移仍需单独验收。
+- 本轮测试覆盖 MVP 闭环以及取消挂号、CSV 导入、统计等已实现扩展；未覆盖的其他扩展功能和生产 PostgreSQL 迁移仍需单独验收。
 - Dockerfile、Nginx 配置和 Compose 健康检查已提供；本机未安装 Docker CLI，因此本地不能给出镜像构建或容器启动证据。
 - CI 会真实执行两个应用镜像的 `docker build` 和 Compose 应用镜像构建；构建失败会阻断流水线。
 

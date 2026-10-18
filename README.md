@@ -120,6 +120,8 @@ docker compose up --build
 
 Web 映射 `http://localhost:5173`，API 映射 `http://localhost:8000`，PostgreSQL 使用命名卷。生产环境必须覆盖本地默认密码和 JWT 密钥。
 
+验收证据边界：当前验收机未安装 Docker CLI，因此本地没有声称 `docker build` 或 `docker compose up` 已通过；CI 工作流会在 Linux runner 上真实执行两个镜像的构建、Compose 配置校验和应用镜像构建，失败会阻断合并。发布前应保存对应 CI run 链接和日志。
+
 CI 在 push/PR 上执行根目录 pytest、后端 Ruff 和测试、前端 lint/typecheck/Vitest/build、Playwright E2E、Compose 校验和真实 Docker 镜像构建。E2E 失败会上传报告、截图、视频和 trace，并阻断合并。
 
 ## 课程验收材料

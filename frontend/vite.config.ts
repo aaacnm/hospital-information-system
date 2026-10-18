@@ -11,5 +11,13 @@ export default defineConfig({
   server: {
     port: 5173,
     strictPort: false,
+    proxy: {
+      // Keep the browser on the Vite origin during local development.
+      // Production deployments can override VITE_API_BASE_URL and use nginx instead.
+      '/api': {
+        target: 'http://127.0.0.1:8000',
+        changeOrigin: true,
+      },
+    },
   },
 });

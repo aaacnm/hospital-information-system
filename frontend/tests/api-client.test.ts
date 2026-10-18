@@ -30,6 +30,15 @@ describe('apiClient', () => {
     await expect(apiClient.me()).rejects.toBeInstanceOf(ApiError);
   });
 
+  it('uses the same /api origin-relative base for ordinary API reads', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify([]), { status: 200 }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await apiClient.get('/schedules?date=2099-01-01');
+
+    expect(fetchMock).toHaveBeenCalledWith('/api/schedules?date=2099-01-01', expect.objectContaining({ headers: expect.any(Headers) }));
+  });
+
   it('preserves structured 403 messages', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({ message: '需要管理员角色' }), { status: 403 })));
     await expect(apiClient.me()).rejects.toMatchObject({ status: 403, message: '需要管理员角色' });

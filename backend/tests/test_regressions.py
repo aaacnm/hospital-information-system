@@ -215,6 +215,56 @@ def test_workbench_directory_lists_schedule_and_export(client):
     assert client.get("/api/workload", headers=cashier).json()["pending_count"] == 0
 
 
+def test_workbench_filters_use_unexpired_stock_and_patient_scope(client, db):
+    registration_id, cashier = make_registration(client)
+    cashier_headers = auth(cashier)
+    doctor = auth(token_for(client, "doctor.demo"))
+    db.add_all(
+        [
+            DrugStock(drug_id=1, batch_no="filter-ok", quantity=3, expiry_date=date(2099, 12, 31)),
+            DrugStock(
+                drug_id=1,
+                batch_no="filter-expired",
+                quantity=2,
+                expiry_date=business_date() - timedelta(days=1),
+            ),
+        ]
+    )
+    db.commit()
+
+    drugs = client.get("/api/drug-list?keyword=测试药品A", headers=cashier_headers).json()
+    assert drugs["items"][0]["stock_qty"] == 5
+    assert drugs["items"][0]["available_stock"] == 3
+
+    visits = client.get(
+        "/api/registrations?visit_date=2099-01-01&status=候诊", headers=cashier_headers
+    ).json()
+    assert visits["total"] == 1
+    assert visits["items"][0]["id"] == registration_id
+    assert (
+        client.get("/api/registrations?visit_date=2026-01-01", headers=cashier_headers).json()[
+            "total"
+        ]
+        == 0
+    )
+
+    rx = client.post(
+        "/api/prescriptions",
+        json={
+            "registration_id": registration_id,
+            "diagnosis_code": "J06.9",
+            "diagnosis_name": "演示诊断",
+            "items": [{"drug_id": 1, "quantity": 1}],
+        },
+        headers=doctor,
+    )
+    assert rx.status_code == 201, rx.text
+    assert client.get("/api/prescriptions?keyword=测试患者", headers=doctor).json()["total"] == 1
+    assert (
+        client.get("/api/prescriptions?keyword=不存在的患者", headers=doctor).json()["total"] == 0
+    )
+
+
 def test_draft_edit_reprices_and_cannot_edit_after_submission(client):
     registration, cashier = make_registration(client)
     doctor = auth(token_for(client, "doctor.demo"))

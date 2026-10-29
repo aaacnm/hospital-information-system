@@ -33,6 +33,7 @@ export interface Drug {
     insurance_type: string | null;
     unit_price: string;
     stock_qty: number;
+    available_stock?: number | null;
     expiry_date: string | null;
 }
 export interface Stock {

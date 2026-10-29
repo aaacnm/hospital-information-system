@@ -326,6 +326,39 @@
             }
           },
           {
+            "name": "visit_date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Visit Date"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
             "name": "page",
             "in": "query",
             "required": false,
@@ -824,6 +857,16 @@
                 }
               ],
               "title": "Status"
+            }
+          },
+          {
+            "name": "keyword",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "",
+              "title": "Keyword"
             }
           },
           {
@@ -3107,6 +3150,17 @@
           "stock_qty": {
             "type": "integer",
             "title": "Stock Qty"
+          },
+          "available_stock": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Available Stock"
           },
           "expiry_date": {
             "anyOf": [

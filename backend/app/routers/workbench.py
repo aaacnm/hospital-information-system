@@ -32,6 +32,7 @@ from app.schemas.business import (
 )
 from app.security import get_current_user, require_roles
 from app.services.business import _audit, _error, today_report
+from app.services.inventory import record_movement
 from app.services.rules import business_date
 
 router = APIRouter(prefix="/api", tags=["workbench"])
@@ -263,6 +264,7 @@ def stock_create(
     row = DrugStock(drug_id=drug_id, **payload.model_dump())
     db.add(row)
     drug.stock_qty += payload.quantity
+    record_movement(db, row, payload.quantity, "入库", user)
     db.flush()
     _audit(
         db,

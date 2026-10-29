@@ -1,0 +1,44 @@
+..............................................                           [100%]
+============================== warnings summary ===============================
+..\..\zhongjian\envs\医院信息系统\dev\Lib\site-packages\starlette\testclient.py:40
+  D:\rubbish\zhongjian\envs\医院信息系统\dev\Lib\site-packages\starlette\testclient.py:40: DeprecationWarning: The anyio.abc.BlockingPortal alias is deprecated, use anyio.from_thread.BlockingPortal instead.
+    _PortalFactoryType = typing.Callable[[], typing.ContextManager[anyio.abc.BlockingPortal]]
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+
+---------- coverage: platform win32, python 3.12.14-final-0 ----------
+Name                                       Stmts   Miss  Cover   Missing
+------------------------------------------------------------------------
+backend\app\__init__.py                        0      0   100%
+backend\app\ai\__init__.py                     0      0   100%
+backend\app\ai\provider.py                    33     19    42%   20, 25-29, 32-49, 53-59
+backend\app\config.py                         28      1    96%   28
+backend\app\db.py                             38      0   100%
+backend\app\main.py                           41      7    83%   51-58
+backend\app\models\__init__.py                 2      0   100%
+backend\app\models\entities.py               218      0   100%
+backend\app\prompts\__init__.py                0      0   100%
+backend\app\routers\__init__.py                0      0   100%
+backend\app\routers\admin.py                   8      1    88%   16
+backend\app\routers\auth.py                   31      0   100%
+backend\app\routers\business.py               76      5    93%   125, 155, 235, 239, 241
+backend\app\routers\enhancements.py          121     15    88%   52-58, 103, 115, 118, 152, 160, 204, 206, 250
+backend\app\routers\triage.py                 13      0   100%
+backend\app\routers\workbench.py             155     19    88%   88, 94, 146, 148, 150, 155, 182, 214, 220, 222, 241, 259, 261, 263, 284, 289-290, 345, 347
+backend\app\schemas\__init__.py                0      0   100%
+backend\app\schemas\auth.py                   16      0   100%
+backend\app\schemas\business.py              218      0   100%
+backend\app\schemas\triage.py                  9      0   100%
+backend\app\security.py                       46      3    93%   51-53
+backend\app\services\__init__.py               0      0   100%
+backend\app\services\business.py             313     43    86%   78-80, 109-113, 138, 159-163, 169, 181, 200, 258, 327, 329, 331, 336, 372, 382, 384, 388, 390, 411-412, 443, 445, 447, 474, 476, 486, 526, 530, 557-558, 570-571, 635, 641
+backend\app\services\clinical_finance.py     100      7    93%   39, 41, 60-61, 83, 90, 99
+backend\app\services\diagnoses.py              1      0   100%
+backend\app\services\inventory.py              4      0   100%
+backend\app\services\rules.py                 20      0   100%
+backend\app\services\triage.py                44      3    93%   48, 57, 60
+------------------------------------------------------------------------
+TOTAL                                       1535    123    92%
+Coverage JSON written to file D:\rubbish\zhongjian\build\医院信息系统\high-score\coverage.json
+
+46 passed, 1 warning in 76.28s (0:01:16)

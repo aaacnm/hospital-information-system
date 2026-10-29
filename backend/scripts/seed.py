@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from app.db import SessionLocal
 from app.models import Department, Doctor, Drug, DrugStock, Patient, Schedule, User
 from app.security import hash_password
+from app.services.inventory import record_movement
 from app.services.rules import business_date
 
 DEMO_USERS = (
@@ -105,9 +106,11 @@ def seed(db: Session) -> None:
             )
             db.add(drug)
             db.flush()
-            db.add(
-                DrugStock(drug_id=drug.id, batch_no=f"DEMO-{i}", quantity=100, expiry_date=expiry)
+            stock = DrugStock(
+                drug_id=drug.id, batch_no=f"DEMO-{i}", quantity=100, expiry_date=expiry
             )
+            db.add(stock)
+            record_movement(db, stock, 100, "演示期初", None)
     db.commit()
 
 

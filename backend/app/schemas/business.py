@@ -1,5 +1,6 @@
 from datetime import date, datetime
 from decimal import Decimal
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -109,6 +110,8 @@ class ReportTodayResponse(BaseModel):
     registration_count: int
     charged_amount: Decimal
     dispensed_count: int
+    refunded_amount: Decimal = Decimal("0.00")
+    net_amount: Decimal = Decimal("0.00")
 
 
 class RegistrationCreate(BaseModel):
@@ -180,6 +183,7 @@ class ChargeResponse(BaseModel):
     amount: Decimal
     status: str
     paid_at: datetime | None
+    payment_method: str
 
 
 class DispenseResponse(BaseModel):
@@ -245,3 +249,43 @@ class PasswordChange(BaseModel):
         if len(value.encode("utf-8")) > 72:
             raise ValueError("密码的 UTF-8 长度不能超过 72 字节")
         return value
+
+
+class ClinicalRecordInput(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    chief_complaint: str = Field(min_length=1, max_length=300)
+    present_illness: str = Field(min_length=1, max_length=2000)
+    past_history: str = Field(min_length=1, max_length=1000)
+    allergy_history: str = Field(min_length=1, max_length=500)
+    examination: str = Field(min_length=1, max_length=1000)
+
+
+class ClinicalRecordResponse(ClinicalRecordInput):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    registration_id: int
+    doctor_id: int
+    signed_at: datetime | None
+    updated_at: datetime
+
+
+class ChargeInput(BaseModel):
+    payment_method: Literal["现金", "银行卡", "模拟扫码"] = "现金"
+
+
+class RefundInput(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+    reason: str = Field(min_length=4, max_length=300)
+
+
+class RefundResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    prescription_id: int
+    charge_id: int
+    amount: Decimal
+    reason: str
+    created_by: int
+    refunded_at: datetime

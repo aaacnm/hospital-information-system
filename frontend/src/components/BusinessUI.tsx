@@ -1,6 +1,6 @@
 import {Input} from './ui/input';
 import {Button} from './ui/button';
-import { useState, type FormEvent, type ReactNode } from 'react';
+import { cloneElement, useId, useState, type FormEvent, type ReactElement, type ReactNode } from 'react';
 import { StatusMessage } from './StatusMessage';
 import type { PageData } from '../api/business';
 import { Table as ShadcnTable, TableHeader, TableBody, TableRow, TableHead } from './ui/table';
@@ -13,8 +13,8 @@ export function Heading({ title, description, children }: {
 }
 export function Field({ label, children }: {
     label: string;
-    children: ReactNode;
-}) { return <label className="field"><span>{label}</span>{children}</label>; }
+    children: ReactElement<{id?:string}>;
+}) { const generatedId=useId();const id=children.props.id||generatedId;return <div className="field"><label htmlFor={id}>{label}</label>{cloneElement(children,{id})}</div>; }
 export function ErrorNotice({ error }: {
     error: unknown;
 }) { return error ? <StatusMessage tone="error" title="操作未完成">{error instanceof Error ? error.message : '请稍后重试。'}</StatusMessage> : null; }

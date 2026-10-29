@@ -26,3 +26,25 @@
 列表返回 items/total/page/page_size。金额字段为固定两位字符串；兼容 /patients、/drugs 最多100条，业务页面使用分页入口。
 业务错误结构：detail.code/message；Pydantic 参数校验为422。未登录401、无角色权限403、资源不存在404、状态/号源冲突409、库存/效期/CSV错误400。
 批次先到期先出，过期不能用于扣减。诊断编码是教学字段，未接入完整ICD字典或医保对码。
+
+
+## 功能展示版新增接口
+
+| 接口 | 权限 | 页面用途 |
+|---|---|---|
+| POST /registrations/{id}/start | doctor（本人） | 候诊改为就诊中 |
+| GET /diagnoses?keyword= | 已登录 | 12项常用诊断教学示例检索 |
+| GET /registrations/{id}/clinical-record | admin/doctor（本人） | 患者信息与本次文书 |
+| PUT /registrations/{id}/clinical-record | doctor（本人） | 保存五项文书，签署后拒绝修改 |
+| GET /patients/{id}/timeline?page=&page_size= | admin/doctor（本人就诊） | 患者就诊时间线，默认10条、最多20条 |
+| POST /prescriptions/{id}/refund | admin/cashier | JSON reason，未发药全额退费与原批次回库 |
+| GET /prescriptions/{id}/receipt | admin/cashier | 原收费凭证、收费员和退费标记 |
+| GET /billing-records?keyword=&status=&page= | admin/cashier | 收费分页，含处方状态以控制退费入口 |
+| GET /stock-alerts?kind=&page= | admin/pharmacist | low/expiring/expired或全部提醒 |
+| GET /stock-movements?drug_id=&prescription_id=&kind=&page= | admin/pharmacist | 批次出入库流水 |
+| GET /reports/range?start_date=&end_date= | admin | 最多90天，逐日与科室聚合 |
+| POST /reports/range/export?start_date=&end_date= | admin | UTF-8 BOM CSV，导出留痕 |
+
+收费POST可传payment_method：现金、银行卡、模拟扫码；不传时为现金。均为模拟记账。
+退费拒绝已发药、已退费、缺少原批次出库流水的处方。原收费记录状态refunded，处方状态已退费。
+金额保持两位小数字符串；区间净额=本区间发生收费-本区间发生退费。打印页组合读取处方与凭证接口，不新增伪造发票接口。

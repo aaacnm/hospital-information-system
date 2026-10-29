@@ -4,6 +4,7 @@ from pathlib import Path
 
 from alembic import command
 from alembic.config import Config
+from alembic.script import ScriptDirectory
 from app import models  # noqa: F401
 from app.config import get_settings
 from app.db import Base
@@ -11,6 +12,9 @@ from app.db import Base
 
 def main() -> None:
     root = Path(__file__).resolve().parents[1]
+    config = Config(str(root / "alembic.ini"))
+    config.set_main_option("script_location", str(root / "alembic"))
+    latest_revision = ScriptDirectory.from_config(config).get_current_head()
     url = get_settings().database_url
     legacy_unversioned = False
     if url.startswith("sqlite:///"):
@@ -27,7 +31,7 @@ def main() -> None:
                     else None
                 )
                 current = row[0] if row else None
-                if current != "0003_workbench":
+                if current != latest_revision:
                     backup = database.with_suffix(
                         f".backup-{datetime.now():%Y%m%d-%H%M%S-%f}.sqlite"
                     )
@@ -42,7 +46,12 @@ def main() -> None:
                     )
                 }
                 if not revision and tables:
-                    expected = set(Base.metadata.tables) - {"drug_stocks"}
+                    expected = set(Base.metadata.tables) - {
+                        "drug_stocks",
+                        "clinical_records",
+                        "stock_movements",
+                        "refund_orders",
+                    }
                     if tables != expected:
                         raise RuntimeError(
                             "无版本数据库结构不匹配原初版，已备份；请人工确认后迁移。"
@@ -51,11 +60,12 @@ def main() -> None:
                         columns = {
                             row[1] for row in source.execute(f'PRAGMA table_info("{table}")')
                         }
-                        if columns != set(Base.metadata.tables[table].columns.keys()):
+                        expected_columns = set(Base.metadata.tables[table].columns.keys())
+                        if table == "charge_orders":
+                            expected_columns -= {"payment_method"}
+                        if columns != expected_columns:
                             raise RuntimeError(f"{table} 字段不匹配原初版，已备份；停止自动迁移。")
                     legacy_unversioned = True
-    config = Config(str(root / "alembic.ini"))
-    config.set_main_option("script_location", str(root / "alembic"))
     if legacy_unversioned:
         command.stamp(config, "e2ca1ffdb4c2")
     command.upgrade(config, "head")

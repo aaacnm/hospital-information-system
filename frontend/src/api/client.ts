@@ -71,11 +71,12 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 }
 
 export const apiClient = {
+  put<T>(path: string, body: unknown): Promise<T> { return request<T>(path, {method:'PUT',body:JSON.stringify(body)}); },
   patch<T>(path: string, body: unknown): Promise<T> { return request<T>(path, {method:'PATCH',body:JSON.stringify(body)}); },
   upload<T>(path: string, body: FormData): Promise<T> {return request<T>(path,{method:'POST',body});},
   async download(path: string, name: string) {
     const data = await request<{csv:string}>(path,{method:'POST'});
-    const url = URL.createObjectURL(new Blob(['\ufeff'+data.csv],{type:'text/csv;charset=utf-8'}));
+    const url = URL.createObjectURL(new Blob([data.csv.startsWith('\ufeff')?data.csv:'\ufeff'+data.csv],{type:'text/csv;charset=utf-8'}));
     const link=document.createElement('a');link.href=url;link.download=name;link.click();URL.revokeObjectURL(url);
   },
   async login(username: string, password: string): Promise<LoginResponse> {

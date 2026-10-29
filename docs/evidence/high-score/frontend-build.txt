@@ -1,0 +1,13 @@
+
+> hospital-information-system-web@0.1.0 build
+> tsc -b && vite build --outDir D:\rubbish\zhongjian\build\医院信息系统\high-score\frontend --emptyOutDir
+
+vite v7.3.7 building client environment for production...
+transforming...
+✓ 2087 modules transformed.
+rendering chunks...
+computing gzip size...
+../../../zhongjian/build/医院信息系统/high-score/frontend/index.html                   0.51 kB │ gzip:   0.35 kB
+../../../zhongjian/build/医院信息系统/high-score/frontend/assets/index-DWHOc71o.css   52.63 kB │ gzip:  12.39 kB
+../../../zhongjian/build/医院信息系统/high-score/frontend/assets/index-D7y8x0Rl.js   391.60 kB │ gzip: 121.80 kB
+✓ built in 2.73s

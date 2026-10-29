@@ -82,6 +82,7 @@ export interface Charge {
   amount: string;
   status: string;
   paid_at: string | null;
+  payment_method: string;
 }
 
 export interface Dispense {

@@ -14,10 +14,16 @@ def test_migration_and_seed_are_repeatable_and_preserve_existing_data(tmp_path):
         **os.environ,
         "DATABASE_URL": "sqlite:///" + database.as_posix(),
         "PYTHONDONTWRITEBYTECODE": "1",
+        "PYTHONIOENCODING": "utf-8",
     }
     for module in ("scripts.init_db", "scripts.seed", "scripts.init_db", "scripts.seed"):
         run = subprocess.run(
-            [sys.executable, "-m", module], cwd=root, env=env, capture_output=True, text=True
+            [sys.executable, "-m", module],
+            cwd=root,
+            env=env,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
         )
         assert run.returncode == 0, run.stderr
     with sqlite3.connect(database) as db:
@@ -27,7 +33,12 @@ def test_migration_and_seed_are_repeatable_and_preserve_existing_data(tmp_path):
         db.execute("UPDATE drugs SET stock_qty=99 WHERE id=1")
         db.execute("UPDATE drug_stocks SET quantity=99 WHERE drug_id=1")
     run = subprocess.run(
-        [sys.executable, "-m", "scripts.seed"], cwd=root, env=env, capture_output=True, text=True
+        [sys.executable, "-m", "scripts.seed"],
+        cwd=root,
+        env=env,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
     )
     assert run.returncode == 0, run.stderr
     with sqlite3.connect(database) as db:
@@ -43,6 +54,7 @@ def test_legacy_migration_preserves_business_records_and_makes_backup(tmp_path, 
         **os.environ,
         "DATABASE_URL": "sqlite:///" + database.as_posix(),
         "PYTHONDONTWRITEBYTECODE": "1",
+        "PYTHONIOENCODING": "utf-8",
     }
     run = subprocess.run(
         [sys.executable, "-m", "alembic", "upgrade", "e2ca1ffdb4c2"],
@@ -50,6 +62,7 @@ def test_legacy_migration_preserves_business_records_and_makes_backup(tmp_path, 
         env=env,
         capture_output=True,
         text=True,
+        encoding="utf-8",
     )
     assert run.returncode == 0, run.stderr
     with sqlite3.connect(database) as db:
@@ -86,6 +99,7 @@ def test_legacy_migration_preserves_business_records_and_makes_backup(tmp_path, 
         env=env,
         capture_output=True,
         text=True,
+        encoding="utf-8",
     )
     assert run.returncode == 0, run.stderr
     backups = list(tmp_path.glob("legacy.backup-*.sqlite"))

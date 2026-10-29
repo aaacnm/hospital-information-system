@@ -1,50 +1,49 @@
-# 本次开发测试报告
+# 功能展示版验证记录
 
-日期：2026-10-29。分支：dev_lboverfys，验证时为工作区版本；基线93bcbea。仅记录本轮实际执行结果。
+日期：2026-10-29。分支：dev_lboverfys，基线0a2ad39。测试在本次提交前的工作区执行，第一轮42项/16项结果保留在原evidence文件中，本报告以下为本版实际结果。
 
-## 结果
+## 本地结果
 
-| 检查 | 本轮结果 | 证据 |
+| 检查 | 结果 | 证据位置（docs/evidence/high-score/） |
 |---|---|---|
-| 后端/契约 pytest | 42 passed，1个依赖弃用警告，73.34秒 | evidence/pytest-result.txt |
-| 应用语句覆盖率 | 1225条，1124条覆盖，91.76%（终端取整92%） | evidence/coverage-summary.json |
-| Ruff检查/格式 | 通过 | evidence/ruff-result.txt |
-| 前端ESLint | 通过 | evidence/frontend-lint.txt |
-| TypeScript | 通过 | evidence/frontend-typecheck.txt |
-| Vitest | 6个文件，16 passed | evidence/frontend-test.txt |
-| 前端生产构建 | 通过，输出D盘指定目录 | evidence/frontend-build.txt |
-| Chrome DevTools业务主线 | 挂号、两药处方、收费28.00、发药、审计与报表实际核对 | evidence/browser-mainline.md |
-| PPT | 8页，逐页视觉检查及文件结构/原生表格检查 | deliverables/和序HIS-课程答辩.pptx |
+| 后端/契约pytest | 46 passed，1个依赖弃用警告，76.28秒 | pytest-result.txt |
+| 应用语句覆盖率 | 1535条，覆盖1412条，91.99% | coverage-summary.json |
+| 收费列表增加处方状态后复测 | 4项相关用例通过 | query-regression.txt |
+| Ruff检查/格式 | 通过，48个文件格式正常 | ruff-result.txt |
+| 前端ESLint / TypeScript | 通过 | frontend-lint.txt、frontend-typecheck.txt |
+| Vitest | 8个文件，20 passed | frontend-test.txt |
+| 前端生产构建 | 通过，JS约391.60kB、CSS约52.63kB（未gzip） | frontend-build.txt |
+| 展示场景API读取 | 12项200，含四角色、文书、时间线、凭证、预警和流水 | showcase-api-evidence.json |
+| 新版PPT | 10页，逐页渲染检查，可编辑表格和图表 | presentation-check.json |
 
-后端警告来自Starlette TestClient引用anyio.abc.BlockingPortal弃用别名，不是失败；python-jose已升级3.5.0。未隐藏警告或跳过失败用例。
+覆盖率范围仅backend/app应用语句，不包含迁移或初始化脚本，不冒充全仓库覆盖率。警告来自Starlette TestClient引用AnyIO弃用别名，没有隐藏或跳过失败用例。
 
-## 关键覆盖
+## 本版重点回归
 
-- Decimal金额、北京时间业务日、身份字段脱敏。
-- 同药重复项汇总、不足全事务回滚、过期批次跳过、先到期先出、价格快照。
-- 独立HTTP请求/数据库连接并发争抢最后号源、最后库存和同处方收费：仅一次成功。
-- 草稿编辑/状态限制、重复收费/发药、角色与医生归属、未绑定医生返回403。
-- CSV坏行后合法行、重复文件、部分成功、导入上限相关规则。
-- 空库迁移、重复初始化不补回消耗；有版本及无版本旧库升级前备份、保留库存/收费/发药历史。
-- 禁用账号、修改密码、UTF-8密码字节边界；AI隐私拦截及失败明确待人工评估。
+- 文书保存、医生角色限制、提交后锁定、患者时间线与诊断检索。
+- 银行卡记账、收费凭证、全额退费、原批次回库、重复退费及已发药拒绝，毛收入/退费/净额一致。
+- 库存提醒、流水、报表日期边界、CSV导出。旧库迁移与重复初始化保留已有业务。
+- 前端直接验证文书保存后提示不消失、已发药不显示退费按钮、退费后记录更新、库存预警/流水切换。
+- 表单label与真实select使用htmlFor/id关联，修正旧CI患者精确标签定位失败的原因。
 
-覆盖率范围为backend/app应用语句，不含Alembic/脚本；迁移脚本由独立测试执行，不将该覆盖率冒充整个仓库覆盖率。
+原有并发、最后号源/库存争抢、重复药品汇总、库存不足回滚、权限与脱敏用例继续包含在46项中。
 
-## 复现
+## 浏览器与CI边界
 
-在项目根目录使用README指定的D盘Python环境与Node可执行文件。后端：`python -m pytest -q --cov=backend/app --cov-report=term-missing`；缓存、COVERAGE_FILE、TEMP/TMP和basetemp应指向D盘任务目录。
-静态：`python -m ruff check backend tests`、`python -m ruff format --check backend tests`。
-前端：依次执行 `npm run lint/typecheck/test/build --prefix frontend`（分别运行各脚本），生产输出按README指定D盘outDir。
+新页面浏览器视觉与交互验收尚未完成。Chrome DevTools专用配置被占用，用户明确选择“先完成开发，稍后再验收页面”。本版未新建浏览器标签页，未改用Playwright或其他工具绕过，也未取得新版页面截图或实际打印结果。旧版浏览器主线证据仍在evidence/browser-mainline.md，不能代替本版验收。
 
-## 验证边界
+基线0a2ad39的远程CI：后端、前端、项目契约、Docker配置/启动检查通过；Playwright主流程失败于getByLabel('患者', {exact:true})。本版已修正label关系并更新文书/报表步骤，新CI结果以本次提交关联的运行记录为准，此处不将基线结果当作新版CI结果。
 
-本轮未运行本地Playwright（遵守Chrome DevTools限定），仓库保留更新后的CI脚本，不能把旧版1 passed算作本次结果。
-本机无Docker CLI；本轮本地验证不包含新CI结果；未测试PostgreSQL、真实支付/医保或真实外部LLM。
-截图工具因目录限制/超时未取得图片，提供真实文字观察与数据库核对摘要，不伪造截图或trace。
-本轮数据为数十条以内的虚构单机演示量，未做大规模压测。
+CI链接：https://github.com/aaacnm/hospital-information-system/actions/runs/40853238334 。本机未运行Playwright或Docker；未验证PostgreSQL、真实支付/医保或真实外部模型。
 
 ## 数据访问检查
 
-涉及patients、schedules、registration_orders、prescriptions/items、drugs/stocks、charge/dispense_orders、audit_logs、users等13表。
-列表默认20条、上限100条，兼容列表限100；处方关联通过selectinload/joinedload批量加载，药品与库存按当前处方ID集合批量读取，无逐条远程调用。CSV最大5000行，已有键每批200个查询，次数随批次数增长，不按行逐次查询。
-关键时间/外键/状态索引已检查定义；本机小样本EXPLAIN结果另见 evidence/query-plans.json。不能据此保证生产规模索引选择。
+涉及原13张业务表和clinical_records、refund_orders、stock_movements，共16表。展示场景为44次挂号、15名患者、10种药品、数十条收费/流水的小样本，不做生产规模推断。
+
+列表默认20条，上限100条；患者时间线默认10条，上限20条；报表最多90天。收费记录/库存流水使用关联查询；时间线采用关联加载；库存提醒在数据库聚合；区间报表分别分组聚合后在内存按日期匹配。查询次数不随列表每一行逐次增长，没有逐条远程请求。
+
+CSV最大5000行，已有键每200个批量查询，次数随批次数增加。新增表已声明医生/外键/药品时间等索引，本轮未对新查询另做执行计划或大规模压测；原小样本执行计划仅属于旧版记录。
+
+## 复现
+
+从项目根目录用README列出的项目Python和Node执行pytest、Ruff与前端lint/typecheck/test/build。TEMP/TMP、COVERAGE_FILE、basetemp和缓存放D盘独立任务目录。API验证使用本轮独立的虚构展示库，没有连接线上数据库。

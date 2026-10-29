@@ -4,7 +4,8 @@
     [string]$DatabasePath = 'D:\rubbish\zhongjian\artifacts\医院信息系统\demo\hospital.sqlite',
     [string]$WebPath = 'D:\rubbish\zhongjian\build\医院信息系统\frontend',
     [int]$Port = 8000,
-    [switch]$Build
+    [switch]$Build,
+    [switch]$Showcase
 )
 $ErrorActionPreference = 'Stop'
 if (-not (Test-Path -LiteralPath $PythonPath)) { throw '未找到项目 Python。先按 README 准备环境，或通过 -PythonPath 指定。' }
@@ -40,6 +41,10 @@ try {
     if ($LASTEXITCODE -ne 0) { throw '迁移失败，保留数据与备份。' }
     & $PythonPath -m scripts.seed
     if ($LASTEXITCODE -ne 0) { throw '演示初始化失败' }
+    if ($Showcase) {
+        & $PythonPath -m scripts.seed_showcase
+        if ($LASTEXITCODE -ne 0) { throw '课堂展示场景初始化失败；请使用新的独立演示数据库。' }
+    }
     Write-Host "本机演示：http://127.0.0.1:$Port ；在本终端按 Ctrl+C 停止。"
     & $PythonPath -m uvicorn app.main:app --host 127.0.0.1 --port $Port
 } finally { Pop-Location }

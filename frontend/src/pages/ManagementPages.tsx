@@ -5,11 +5,13 @@ import { formatTime, localDay, useData } from '../api/hooks';
 import { useState, type FormEvent } from 'react';
 import { apiClient } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
-import type { Account, Drug, PageData, Patient, Report, Stock } from '../api/business';
+import type { Account, Drug, PageData, Patient, Stock } from '../api/business';
 import type { AuditLogPage } from '../api/types';
 import { Empty, ErrorNotice, Field, Heading, Pager, Search, Table } from '../components/BusinessUI';
 import { StatusMessage } from '../components/StatusMessage';
 export function PatientsPage() {
+    const {user}=useAuth();
+    const showHistory=user?.roles.some(r=>r==='doctor'||r==='admin');
     const [page, setPage] = useState(1);
     const [keyword, setKeyword] = useState('');
     const [version, setVersion] = useState(0);
@@ -33,7 +35,7 @@ export function PatientsPage() {
             setBusy(false);
         }
     }
-    return <section className="page-section"><Heading title="患者档案" description="仅录入虚构演示信息。身份证与手机号由服务端脱敏后保存和显示。"/><Search onSearch={v => { setKeyword(v); setPage(1); }}/><ErrorNotice error={error || data.error}/><Table headers={['患者编号', '姓名', '性别', '证件（脱敏）', '电话（脱敏）']}>{data.data?.items.map(p => <tr key={p.id}><td>{p.patient_no}</td><td>{p.name}</td><td>{p.gender || '—'}</td><td>{p.id_no_masked || '—'}</td><td>{p.phone || '—'}</td></tr>)}</Table><Pager data={data.data} page={page} setPage={setPage}/><details className="action-panel"><summary>新增患者</summary><form className="form-panel" onSubmit={create}><Field label="患者编号"><Input name="patient_no" required maxLength={32}/></Field><Field label="姓名"><Input name="name" required maxLength={80}/></Field><Field label="性别"><NativeSelect name="gender"><option>男</option><option>女</option><option>未知</option></NativeSelect></Field><Field label="演示证件号"><Input name="id_no_masked" maxLength={32}/></Field><Field label="演示电话"><Input name="phone" maxLength={32}/></Field><Button disabled={busy}>保存患者</Button></form></details></section>;
+    return <section className="page-section"><Heading title="患者档案" description="仅录入虚构演示信息。身份证与手机号由服务端脱敏后保存和显示。"/><Search onSearch={v => { setKeyword(v); setPage(1); }}/><ErrorNotice error={error || data.error}/><Table headers={['患者编号', '姓名', '性别', '证件（脱敏）', '电话（脱敏）',...(showHistory?['操作']:[])]}>{data.data?.items.map(p => <tr key={p.id}><td>{p.patient_no}</td><td>{p.name}</td><td>{p.gender || '—'}</td><td>{p.id_no_masked || '—'}</td><td>{p.phone || '—'}</td>{showHistory&&<td><a className="text-action" href={'/patients/'+p.id+'/timeline'}>查看就诊时间线</a></td>}</tr>)}</Table><Pager data={data.data} page={page} setPage={setPage}/><details className="action-panel"><summary>新增患者</summary><form className="form-panel" onSubmit={create}><Field label="患者编号"><Input name="patient_no" required maxLength={32}/></Field><Field label="姓名"><Input name="name" required maxLength={80}/></Field><Field label="性别"><NativeSelect name="gender"><option>男</option><option>女</option><option>未知</option></NativeSelect></Field><Field label="演示证件号"><Input name="id_no_masked" maxLength={32}/></Field><Field label="演示电话"><Input name="phone" maxLength={32}/></Field><Button disabled={busy}>保存患者</Button></form></details></section>;
 }
 export function DrugsPage() {
     const { user } = useAuth();
@@ -174,23 +176,7 @@ export function AuditLogsPage() {
     if (end)
         query.set('end_date', end);
     const result = useData<AuditLogPage>('/audit-logs?' + query.toString(), version);
-    return <section className="page-section"><Heading title="审计日志" description="按操作人、动作和北京时间日期筛选。收费记录保留库存变化与批次分配。"/><form className="filter-bar" onSubmit={e => { e.preventDefault(); setVersion(v => v + 1); }}><Field label="操作人"><NativeSelect value={userId} onChange={e => { setUserId(e.target.value); setPage(1); }}><option value="">全部</option>{accounts.data?.map(a => <option key={a.id} value={a.id}>{a.display_name}</option>)}</NativeSelect></Field><Field label="动作"><NativeSelect value={action} onChange={e => { setAction(e.target.value); setPage(1); }}><option value="">全部</option>{['login', 'patient.create', 'registration.create', 'registration.cancel', 'prescription.create', 'prescription.submit', 'prescription.charge', 'prescription.dispense', 'drug.price.update', 'drug.import', 'stock.receive'].map(a => <option key={a}>{a}</option>)}</NativeSelect></Field><Field label="开始日期"><Input type="date" value={start} onChange={e => { setStart(e.target.value); setPage(1); }}/></Field><Field label="结束日期"><Input type="date" value={end} onChange={e => { setEnd(e.target.value); setPage(1); }}/></Field><Button>刷新日志</Button></form><ErrorNotice error={result.error || accounts.error}/><Table headers={['时间', '操作人', '动作', '对象', 'IP', '变更详情']}>{result.data?.items.map(log => <tr key={log.id}><td>{formatTime(log.created_at)}</td><td>{accounts.data?.find(a => a.id === log.user_id)?.display_name || log.user_id}</td><td>{log.action}</td><td>{log.resource_type} #{log.resource_id}</td><td>{log.ip || '—'}</td><td><details><summary>查看</summary><pre className="audit-detail">操作前：{log.before_json || '—'}{'\n'}操作后：{log.after_json || '—'}</pre></details></td></tr>)}</Table><Empty visible={result.data?.items.length === 0}/><Pager data={result.data} page={page} setPage={setPage}/></section>;
-}
-export function ReportsPage() {
-    const [version, setVersion] = useState(0);
-    const result = useData<Report>('/reports/today', version);
-    const [error, setError] = useState<unknown>(null);
-    async function download() {
-        if (!window.confirm('确认导出不含患者身份信息的汇总报表？导出操作将记录审计。'))
-            return;
-        try {
-            await apiClient.download('/reports/today/export', '门诊当日报表.csv');
-        }
-        catch (r) {
-            setError(r);
-        }
-    }
-    return <section className="page-section"><Heading title="门诊当日报表" description="按北京时间统计。挂号数不包含已取消记录，收费金额取成功收费单，发药量按成功发药单计数。"/><div className="toolbar"><Button onClick={() => setVersion(v => v + 1)} variant="secondary">刷新统计</Button><Button onClick={download} variant="secondary">导出 CSV</Button></div><ErrorNotice error={error || result.error}/>{result.data && <><p>统计日期：{result.data.date}</p><div className="metric-grid">{[['有效挂号', result.data.registration_count], ['收费金额', '¥ ' + result.data.charged_amount], ['发药单数', result.data.dispensed_count]].map(([label, value]) => <article className="metric-card" key={label}><span>{label}</span><strong>{value}</strong></article>)}</div></>}</section>;
+    return <section className="page-section"><Heading title="审计日志" description="按操作人、动作和北京时间日期筛选。收费记录保留库存变化与批次分配。"/><form className="filter-bar" onSubmit={e => { e.preventDefault(); setVersion(v => v + 1); }}><Field label="操作人"><NativeSelect value={userId} onChange={e => { setUserId(e.target.value); setPage(1); }}><option value="">全部</option>{accounts.data?.map(a => <option key={a.id} value={a.id}>{a.display_name}</option>)}</NativeSelect></Field><Field label="动作"><NativeSelect value={action} onChange={e => { setAction(e.target.value); setPage(1); }}><option value="">全部</option>{['login', 'patient.create', 'registration.create', 'registration.cancel', 'prescription.create', 'prescription.submit', 'prescription.charge', 'prescription.dispense', 'drug.price.update', 'drug.import', 'stock.receive', 'clinical.save', 'registration.start', 'prescription.refund', 'report.export'].map(a => <option key={a}>{a}</option>)}</NativeSelect></Field><Field label="开始日期"><Input type="date" value={start} onChange={e => { setStart(e.target.value); setPage(1); }}/></Field><Field label="结束日期"><Input type="date" value={end} onChange={e => { setEnd(e.target.value); setPage(1); }}/></Field><Button>刷新日志</Button></form><ErrorNotice error={result.error || accounts.error}/><Table headers={['时间', '操作人', '动作', '对象', 'IP', '变更详情']}>{result.data?.items.map(log => <tr key={log.id}><td>{formatTime(log.created_at)}</td><td>{accounts.data?.find(a => a.id === log.user_id)?.display_name || log.user_id}</td><td>{log.action}</td><td>{log.resource_type} #{log.resource_id}</td><td>{log.ip || '—'}</td><td><details><summary>查看</summary><pre className="audit-detail">操作前：{log.before_json || '—'}{'\n'}操作后：{log.after_json || '—'}</pre></details></td></tr>)}</Table><Empty visible={result.data?.items.length === 0}/><Pager data={result.data} page={page} setPage={setPage}/></section>;
 }
 export function AccountsPage() {
     const [version, setVersion] = useState(0);

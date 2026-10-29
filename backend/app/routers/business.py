@@ -10,6 +10,7 @@ from app.models.entities import UserRole
 from app.schemas.business import (
     AuditLogListResponse,
     AuditLogResponse,
+    ChargeInput,
     ChargeResponse,
     DispenseResponse,
     DrugCreate,
@@ -200,8 +201,11 @@ def charge(
     prescription_id: int,
     db: Annotated[Session, Depends(get_db)],
     user: Annotated[User, Depends(require_roles(UserRole.ADMIN, UserRole.CASHIER))],
+    payload: ChargeInput | None = None,
 ) -> ChargeResponse:
-    return charge_prescription(db, prescription_id, user)
+    return charge_prescription(
+        db, prescription_id, user, payload.payment_method if payload else "现金"
+    )
 
 
 @router.post("/prescriptions/{prescription_id}/dispense", response_model=DispenseResponse)

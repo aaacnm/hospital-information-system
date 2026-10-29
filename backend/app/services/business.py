@@ -22,12 +22,14 @@ from app.models import (
     Patient,
     Prescription,
     PrescriptionItem,
+    RefundOrder,
     RegistrationOrder,
     Schedule,
     User,
 )
 from app.models.entities import OrderStatus, PrescriptionStatus, RegistrationStatus
 from app.schemas.business import DrugCreate, PatientCreate, PrescriptionCreate, RegistrationCreate
+from app.services.inventory import record_movement
 from app.services.rules import business_date, day_bounds, price_total
 
 
@@ -116,14 +118,14 @@ def create_drug(db: Session, payload: DrugCreate, user: User) -> Drug:
     db.add(drug)
     db.flush()
     if drug.stock_qty:
-        db.add(
-            DrugStock(
-                drug_id=drug.id,
-                batch_no="INITIAL",
-                quantity=drug.stock_qty,
-                expiry_date=drug.expiry_date or date(2099, 12, 31),
-            )
+        stock = DrugStock(
+            drug_id=drug.id,
+            batch_no="INITIAL",
+            quantity=drug.stock_qty,
+            expiry_date=drug.expiry_date or date(2099, 12, 31),
         )
+        db.add(stock)
+        record_movement(db, stock, stock.quantity, "入库", user)
     _audit(db, user.id, "drug.create", "drug", drug.id, after={"generic_name": drug.generic_name})
     db.commit()
     db.refresh(drug)
@@ -223,18 +225,16 @@ def import_drugs(db: Session, content: bytes, user: User) -> dict:
     drugs = [Drug(**payload.model_dump()) for payload in valid]
     db.add_all(drugs)
     db.flush()
-    db.add_all(
-        [
-            DrugStock(
+    for drug in drugs:
+        if drug.stock_qty:
+            stock = DrugStock(
                 drug_id=drug.id,
                 batch_no="IMPORT",
                 quantity=drug.stock_qty,
                 expiry_date=drug.expiry_date or date(2099, 12, 31),
             )
-            for drug in drugs
-            if drug.stock_qty
-        ]
-    )
+            db.add(stock)
+            record_movement(db, stock, stock.quantity, "导入入库", user)
     _audit(
         db,
         user.id,
@@ -288,8 +288,13 @@ def today_report(db: Session, report_date: date) -> dict:
         .filter(
             ChargeOrder.paid_at >= start,
             ChargeOrder.paid_at < end,
-            ChargeOrder.status == OrderStatus.COMPLETED.value,
+            ChargeOrder.status.in_([OrderStatus.COMPLETED.value, OrderStatus.REFUNDED.value]),
         )
+        .scalar()
+    )
+    refunded_amount = (
+        db.query(func.coalesce(func.sum(RefundOrder.amount), 0))
+        .filter(RefundOrder.refunded_at >= start, RefundOrder.refunded_at < end)
         .scalar()
     )
     return {
@@ -302,6 +307,8 @@ def today_report(db: Session, report_date: date) -> dict:
         )
         .count(),
         "charged_amount": Decimal(str(charged_amount or 0)),
+        "refunded_amount": Decimal(str(refunded_amount or 0)),
+        "net_amount": Decimal(str(charged_amount or 0)) - Decimal(str(refunded_amount or 0)),
         "dispensed_count": db.query(DispenseOrder)
         .filter(
             DispenseOrder.dispensed_at >= start,
@@ -440,6 +447,8 @@ def submit_prescription(db: Session, prescription_id: int, user: User) -> Prescr
         raise _error("INVALID_PRESCRIPTION_STATE", "只有草稿处方可以提交", status.HTTP_409_CONFLICT)
     before = {"status": prescription.status}
     prescription.status = PrescriptionStatus.PENDING_CHARGE.value
+    if prescription.registration.clinical_record:
+        prescription.registration.clinical_record.signed_at = datetime.now(UTC)
     _audit(
         db,
         user.id,
@@ -504,7 +513,9 @@ def edit_prescription(db: Session, prescription_id: int, payload: PrescriptionCr
     return rx
 
 
-def charge_prescription(db: Session, prescription_id: int, user: User) -> ChargeOrder:
+def charge_prescription(
+    db: Session, prescription_id: int, user: User, payment_method: str = "现金"
+) -> ChargeOrder:
     prescription = (
         db.query(Prescription)
         .filter(Prescription.id == prescription_id)
@@ -575,6 +586,7 @@ def charge_prescription(db: Session, prescription_id: int, user: User) -> Charge
     }
     for stock, quantity in allocations:
         stock.quantity -= quantity
+        record_movement(db, stock, -quantity, "收费出库", user, prescription.id)
     for drug in drugs:
         drug.stock_qty -= quantities[drug.id]
     # Preserve prescription prices; later price changes affect new prescriptions.
@@ -587,6 +599,7 @@ def charge_prescription(db: Session, prescription_id: int, user: User) -> Charge
         status=OrderStatus.COMPLETED.value,
         paid_at=datetime.now(UTC),
         created_by=user.id,
+        payment_method=payment_method,
     )
     db.add(charge)
     db.flush()

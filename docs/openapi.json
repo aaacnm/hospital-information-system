@@ -1044,6 +1044,23 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/ChargeInput"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Payload"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -1703,6 +1720,742 @@
         }
       }
     },
+    "/api/registrations/{registration_id}/start": {
+      "post": {
+        "tags": [
+          "clinical-finance"
+        ],
+        "summary": "Start Consultation",
+        "operationId": "start_consultation_api_registrations__registration_id__start_post",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "registration_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Registration Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/diagnoses": {
+      "get": {
+        "tags": [
+          "clinical-finance"
+        ],
+        "summary": "Diagnoses",
+        "operationId": "diagnoses_api_diagnoses_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "keyword",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 80,
+              "default": "",
+              "title": "Keyword"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/registrations/{registration_id}/clinical-record": {
+      "get": {
+        "tags": [
+          "clinical-finance"
+        ],
+        "summary": "Clinical Record",
+        "operationId": "clinical_record_api_registrations__registration_id__clinical_record_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "registration_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Registration Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "clinical-finance"
+        ],
+        "summary": "Clinical Save",
+        "operationId": "clinical_save_api_registrations__registration_id__clinical_record_put",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "registration_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Registration Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClinicalRecordInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClinicalRecordResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/patients/{patient_id}/timeline": {
+      "get": {
+        "tags": [
+          "clinical-finance"
+        ],
+        "summary": "Patient Timeline",
+        "operationId": "patient_timeline_api_patients__patient_id__timeline_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "patient_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Patient Id"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1,
+              "title": "Page"
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 20,
+              "minimum": 1,
+              "default": 10,
+              "title": "Page Size"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/prescriptions/{prescription_id}/refund": {
+      "post": {
+        "tags": [
+          "clinical-finance"
+        ],
+        "summary": "Refund",
+        "operationId": "refund_api_prescriptions__prescription_id__refund_post",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "prescription_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Prescription Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefundInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RefundResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/prescriptions/{prescription_id}/receipt": {
+      "get": {
+        "tags": [
+          "clinical-finance"
+        ],
+        "summary": "Receipt",
+        "operationId": "receipt_api_prescriptions__prescription_id__receipt_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "prescription_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Prescription Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/billing-records": {
+      "get": {
+        "tags": [
+          "clinical-finance"
+        ],
+        "summary": "Billing Records",
+        "operationId": "billing_records_api_billing_records_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "completed",
+                "refunded",
+                ""
+              ],
+              "type": "string",
+              "default": "",
+              "title": "Status"
+            }
+          },
+          {
+            "name": "keyword",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 80,
+              "default": "",
+              "title": "Keyword"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1,
+              "title": "Page"
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 20,
+              "title": "Page Size"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/stock-movements": {
+      "get": {
+        "tags": [
+          "clinical-finance"
+        ],
+        "summary": "Stock Movements",
+        "operationId": "stock_movements_api_stock_movements_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "drug_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Drug Id"
+            }
+          },
+          {
+            "name": "prescription_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Prescription Id"
+            }
+          },
+          {
+            "name": "kind",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 20,
+              "default": "",
+              "title": "Kind"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1,
+              "title": "Page"
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 20,
+              "title": "Page Size"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/stock-alerts": {
+      "get": {
+        "tags": [
+          "clinical-finance"
+        ],
+        "summary": "Stock Alerts",
+        "operationId": "stock_alerts_api_stock_alerts_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "kind",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "low",
+                "expiring",
+                "expired",
+                ""
+              ],
+              "type": "string",
+              "default": "",
+              "title": "Kind"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1,
+              "title": "Page"
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 20,
+              "title": "Page Size"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/reports/range": {
+      "get": {
+        "tags": [
+          "clinical-finance"
+        ],
+        "summary": "Ranged Report",
+        "operationId": "ranged_report_api_reports_range_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "start_date",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "title": "Start Date"
+            }
+          },
+          {
+            "name": "end_date",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "title": "End Date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/reports/range/export": {
+      "post": {
+        "tags": [
+          "clinical-finance"
+        ],
+        "summary": "Export Range",
+        "operationId": "export_range_api_reports_range_export_post",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "start_date",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "title": "Start Date"
+            }
+          },
+          {
+            "name": "end_date",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "title": "End Date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/health": {
       "get": {
         "tags": [
@@ -1929,6 +2682,22 @@
         ],
         "title": "Body_login_api_auth_login_post"
       },
+      "ChargeInput": {
+        "properties": {
+          "payment_method": {
+            "type": "string",
+            "enum": [
+              "现金",
+              "银行卡",
+              "模拟扫码"
+            ],
+            "title": "Payment Method",
+            "default": "现金"
+          }
+        },
+        "type": "object",
+        "title": "ChargeInput"
+      },
       "ChargeResponse": {
         "properties": {
           "id": {
@@ -1958,6 +2727,10 @@
               }
             ],
             "title": "Paid At"
+          },
+          "payment_method": {
+            "type": "string",
+            "title": "Payment Method"
           }
         },
         "type": "object",
@@ -1966,9 +2739,130 @@
           "prescription_id",
           "amount",
           "status",
-          "paid_at"
+          "paid_at",
+          "payment_method"
         ],
         "title": "ChargeResponse"
+      },
+      "ClinicalRecordInput": {
+        "properties": {
+          "chief_complaint": {
+            "type": "string",
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Chief Complaint"
+          },
+          "present_illness": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Present Illness"
+          },
+          "past_history": {
+            "type": "string",
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Past History"
+          },
+          "allergy_history": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Allergy History"
+          },
+          "examination": {
+            "type": "string",
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Examination"
+          }
+        },
+        "type": "object",
+        "required": [
+          "chief_complaint",
+          "present_illness",
+          "past_history",
+          "allergy_history",
+          "examination"
+        ],
+        "title": "ClinicalRecordInput"
+      },
+      "ClinicalRecordResponse": {
+        "properties": {
+          "chief_complaint": {
+            "type": "string",
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Chief Complaint"
+          },
+          "present_illness": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Present Illness"
+          },
+          "past_history": {
+            "type": "string",
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Past History"
+          },
+          "allergy_history": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Allergy History"
+          },
+          "examination": {
+            "type": "string",
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Examination"
+          },
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "registration_id": {
+            "type": "integer",
+            "title": "Registration Id"
+          },
+          "doctor_id": {
+            "type": "integer",
+            "title": "Doctor Id"
+          },
+          "signed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Signed At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "chief_complaint",
+          "present_illness",
+          "past_history",
+          "allergy_history",
+          "examination",
+          "id",
+          "registration_id",
+          "doctor_id",
+          "signed_at",
+          "updated_at"
+        ],
+        "title": "ClinicalRecordResponse"
       },
       "DispenseResponse": {
         "properties": {
@@ -2704,6 +3598,65 @@
         ],
         "title": "PrescriptionResponse"
       },
+      "RefundInput": {
+        "properties": {
+          "reason": {
+            "type": "string",
+            "maxLength": 300,
+            "minLength": 4,
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "reason"
+        ],
+        "title": "RefundInput"
+      },
+      "RefundResponse": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "prescription_id": {
+            "type": "integer",
+            "title": "Prescription Id"
+          },
+          "charge_id": {
+            "type": "integer",
+            "title": "Charge Id"
+          },
+          "amount": {
+            "type": "string",
+            "title": "Amount"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          },
+          "created_by": {
+            "type": "integer",
+            "title": "Created By"
+          },
+          "refunded_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Refunded At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "prescription_id",
+          "charge_id",
+          "amount",
+          "reason",
+          "created_by",
+          "refunded_at"
+        ],
+        "title": "RefundResponse"
+      },
       "RegistrationCreate": {
         "properties": {
           "patient_id": {
@@ -2785,6 +3738,16 @@
           "dispensed_count": {
             "type": "integer",
             "title": "Dispensed Count"
+          },
+          "refunded_amount": {
+            "type": "string",
+            "title": "Refunded Amount",
+            "default": "0.00"
+          },
+          "net_amount": {
+            "type": "string",
+            "title": "Net Amount",
+            "default": "0.00"
           }
         },
         "type": "object",

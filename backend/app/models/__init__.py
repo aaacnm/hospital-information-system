@@ -1,6 +1,7 @@
 from app.models.entities import (
     AuditLog,
     ChargeOrder,
+    ClinicalRecord,
     Department,
     DispenseOrder,
     Doctor,
@@ -9,12 +10,17 @@ from app.models.entities import (
     Patient,
     Prescription,
     PrescriptionItem,
+    RefundOrder,
     RegistrationOrder,
     Schedule,
+    StockMovement,
     User,
 )
 
 __all__ = [
+    "ClinicalRecord",
+    "RefundOrder",
+    "StockMovement",
     "AuditLog",
     "ChargeOrder",
     "Department",

@@ -47,12 +47,14 @@ class PrescriptionStatus(StrEnum):
     PAID = "已收费"
     DISPENSED = "已发药"
     CANCELLED = "已取消"
+    REFUNDED = "已退费"
 
 
 class OrderStatus(StrEnum):
     PENDING = "pending"
     COMPLETED = "completed"
     CANCELLED = "cancelled"
+    REFUNDED = "refunded"
 
 
 class BaseEntity(Base):
@@ -184,6 +186,9 @@ class RegistrationOrder(BaseEntity):
     prescription: Mapped[Prescription | None] = relationship(
         back_populates="registration", uselist=False
     )
+    clinical_record: Mapped[ClinicalRecord | None] = relationship(
+        back_populates="registration", uselist=False
+    )
 
 
 class Prescription(BaseEntity):
@@ -251,11 +256,64 @@ class ChargeOrder(BaseEntity):
     prescription_id: Mapped[int] = mapped_column(ForeignKey("prescriptions.id"), unique=True)
     amount: Mapped[Decimal] = mapped_column(Numeric(12, 2))
     payer: Mapped[str | None] = mapped_column(String(80))
+    payment_method: Mapped[str] = mapped_column(String(20), default="现金", server_default="未记录")
     status: Mapped[str] = mapped_column(String(20), default=OrderStatus.PENDING.value)
     paid_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     created_by: Mapped[int] = mapped_column(ForeignKey("users.id"))
 
     prescription: Mapped[Prescription] = relationship(back_populates="charge_order")
+    refund: Mapped[RefundOrder | None] = relationship(back_populates="charge", uselist=False)
+
+
+class ClinicalRecord(BaseEntity):
+    __tablename__ = "clinical_records"
+
+    registration_id: Mapped[int] = mapped_column(ForeignKey("registration_orders.id"), unique=True)
+    doctor_id: Mapped[int] = mapped_column(ForeignKey("doctors.id"), index=True)
+    chief_complaint: Mapped[str] = mapped_column(String(300))
+    present_illness: Mapped[str] = mapped_column(Text)
+    past_history: Mapped[str] = mapped_column(Text)
+    allergy_history: Mapped[str] = mapped_column(Text)
+    examination: Mapped[str] = mapped_column(Text)
+    signed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+    registration: Mapped[RegistrationOrder] = relationship(back_populates="clinical_record")
+
+
+class RefundOrder(BaseEntity):
+    __tablename__ = "refund_orders"
+    __table_args__ = (Index("ix_refund_time", "refunded_at"),)
+
+    charge_id: Mapped[int] = mapped_column(ForeignKey("charge_orders.id"), unique=True)
+    prescription_id: Mapped[int] = mapped_column(ForeignKey("prescriptions.id"), unique=True)
+    amount: Mapped[Decimal] = mapped_column(Numeric(12, 2))
+    reason: Mapped[str] = mapped_column(String(300))
+    created_by: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    refunded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+    charge: Mapped[ChargeOrder] = relationship(back_populates="refund")
+
+
+class StockMovement(BaseEntity):
+    __tablename__ = "stock_movements"
+    __table_args__ = (
+        UniqueConstraint(
+            "prescription_id", "stock_id", "kind", name="uq_movement_prescription_batch_kind"
+        ),
+        CheckConstraint("quantity_delta != 0", name="ck_movement_nonzero"),
+        CheckConstraint("balance_after >= 0", name="ck_movement_balance"),
+        Index("ix_movement_drug_time", "drug_id", "created_at", "id"),
+    )
+
+    drug_id: Mapped[int] = mapped_column(ForeignKey("drugs.id"))
+    stock_id: Mapped[int] = mapped_column(ForeignKey("drug_stocks.id"), index=True)
+    prescription_id: Mapped[int | None] = mapped_column(ForeignKey("prescriptions.id"), index=True)
+    kind: Mapped[str] = mapped_column(String(20))
+    quantity_delta: Mapped[int] = mapped_column(Integer)
+    balance_after: Mapped[int] = mapped_column(Integer)
+    created_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"))
+
+    stock: Mapped[DrugStock] = relationship()
 
 
 class DispenseOrder(BaseEntity):

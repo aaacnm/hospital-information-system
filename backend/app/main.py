@@ -14,6 +14,7 @@ from app.db import get_db
 from app.routers.admin import router as admin_router
 from app.routers.auth import router as auth_router
 from app.routers.business import router as business_router
+from app.routers.enhancements import router as enhancements_router
 from app.routers.triage import router as triage_router
 from app.routers.workbench import router as workbench_router
 
@@ -37,6 +38,7 @@ app.include_router(admin_router)
 app.include_router(business_router)
 app.include_router(triage_router)
 app.include_router(workbench_router)
+app.include_router(enhancements_router)
 
 
 @app.get("/health", tags=["system"])

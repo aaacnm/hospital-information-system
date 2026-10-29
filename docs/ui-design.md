@@ -1,23 +1,25 @@
-# 界面设计与组件来源
+# 和序 HIS 界面说明
 
-2026-10-29，按用户追加要求，将原始表单界面改成 shadcn/ui 门诊工作台。
+按用户要求使用shadcn/ui。深青侧栏、浅灰工作区和绿色主操作贯穿登录、工作台与各业务页面。
 
-## 视觉与交互
+## 本版可见内容
 
-- 品牌：和序 HIS；深青侧栏、浅灰工作区、绿色主操作，搭配低饱和蓝色与琥珀色指标。
-- 登录：左右分栏、业务流程说明、四种演示身份快捷填入；真实请求验证后进入工作台。
-- 工作台：按角色展示数据库指标、快捷入口、门诊流程；加载时用 Skeleton，失败明确显示。
-- 业务页：统一页面标题、筛选表单、分页表格、状态徽章、处方明细和费用；按钮统一高度、焦点与禁用样式。
-- 适配：桌面双栏，小屏导航横向滚动；表格在自身容器滚动，保留数据列。
+- 接诊看板：深绿横幅、实时时钟、候诊/接诊/完成指标、患者卡片与接诊入口。
+- 医生诊疗：患者信息条、五项诊疗表单、常用诊断检索、保存提示和文书锁定状态。
+- 患者时间线：患者信息卡、按日期排列的就诊记录、诊断/状态/费用与处方入口。
+- 收费记录：状态筛选、患者搜索、凭证打印、符合条件处方的退费确认。
+- 库存中心：低库存/近效期/过期提醒、数量对照与批次流水。
+- 经营看板：日期快捷切换、四项金额/业务指标、双趋势图、科室条形分布和明细。
+- 单据打印：A4处方和收费凭证，打印时隐藏导航和工具栏，保留教学标记。
 
-## 官方源码与许可
+图表使用原生SVG，没有新增图表依赖。表单标签通过label的htmlFor关联真实输入框id，支持键盘与辅助工具精确定位。桌面使用多列布局，小屏切单列，表格在自身容器横向滚动。
 
-使用 [shadcn/ui](https://ui.shadcn.com/) 官方 New York v4 registry 的 Button、Input、Textarea、NativeSelect、Table、Card、Badge、Skeleton，保存为项目源码，采用其 MIT 许可。组件文件位于 `frontend/src/components/ui`，项目配置为 `frontend/components.json`。
+## 组件与许可
 
-来源模式：`https://ui.shadcn.com/r/styles/new-york-v4/<component>.json`。组件依赖 Tailwind CSS v4、class-variance-authority、clsx、tailwind-merge；Button 插槽使用 @radix-ui/react-slot，图标来自 lucide-react。沿用项目已存在的 React/Vite/TypeScript，无全局组件安装。
+使用 https://ui.shadcn.com/ 官方New York v4 registry的Button、Input、Textarea、NativeSelect、Table、Card、Badge、Skeleton源码，MIT许可。代码在frontend/src/components/ui，来源及依赖许可见frontend/THIRD_PARTY_NOTICES.md。
 
-适配仅包括本地导入路径与 Radix Slot 导入方式。业务表单实际使用这些组件，表格封装使用 shadcn Table；页面的侧栏、布局、流程图由项目自行实现。
+侧栏、业务布局和SVG图表为项目实现。使用现有Tailwind CSS v4、Radix Slot、class-variance-authority、clsx、tailwind-merge和lucide-react，本轮未安装新依赖。
 
-## 验证边界
+## 验证状态
 
-TypeScript、ESLint、Vitest 和生产构建已执行，最终结果见 [测试报告](test-report.md)。Chrome DevTools 实际核对登录、处方、收费、发药、审计等页面。截图工具本次受保存目录限制且无文件模式超时，未取得可交付页面截图；不使用设计示意图充当真实截图。
+ESLint、TypeScript、20项Vitest和生产构建通过。旧版主流程已有Chrome DevTools文字观察。本版因专用浏览器配置占用，用户选择延后页面验收，因此新版布局、悬停效果和真实打印预览还需浏览器核对；未用示意图充当页面截图。

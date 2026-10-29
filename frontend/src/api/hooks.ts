@@ -25,3 +25,5 @@ export function useData<T>(url: string | null, version = 0) {
 }
 export const localDay = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Shanghai', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
 export const formatTime = (v: string) => new Date(v.endsWith('Z') || /[+-]\d\d:\d\d$/.test(v) ? v : v + 'Z').toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' });
+
+export const dateBefore=(days:number)=>new Date(Date.parse(localDay()+'T00:00:00Z')-days*86400000).toISOString().slice(0,10);

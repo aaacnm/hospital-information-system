@@ -1,139 +1,80 @@
-# 医院信息系统课程设计
+# 门诊业务闭环系统
+依据《医院信息系统基本功能规范》（2002 年）的课程选题，实现门诊医生工作站、门诊收费和门诊药房的部分功能。患者建档、排班挂号作为主线支撑。最终交付面向本机现场演示，不需要公网地址。
 
-本项目依据《2002 医院信息系统功能规范》，实现一条可现场验收的门诊业务闭环：
+## 技术与业务范围
+React 19 + Vite + TypeScript；FastAPI + SQLAlchemy + Alembic；本机 SQLite。
+流程：患者建档 → 选择排班挂号 → 本人医生接诊/多药处方/自动划价 → 收费与批次库存同一事务 → 药师确认发药 → 审计与统计。
+挂号不单独收费；候诊 → 就诊中 → 已完成，接诊前可取消。
+处方：草稿（可编辑）→ 待收费 → 已收费 → 已发药。开方/编辑时使用药品档案计价并保存价格快照，后续改价只影响新处方。收费时合并同药需求量，按未过期批次先到期先出库；发药不再扣第二次库存。
+不包括住院、真实医保、真实支付、PACS 或区域平台联调。AI 默认关闭，只返回人工分诊指引；无外部密钥也能展示完整基础业务。
 
-`患者/排班 → 挂号 → 处方 → 收费 → 扣库存 → 发药 → 审计日志`
+## 本机启动
+已在本任务电脑准备：
+- Python：`D:\rubbish\zhongjian\envs\医院信息系统\dev\Scripts\python.exe`
+- Node：`D:\Code\nodejs\node.exe`
+- 依赖：前端 `frontend/node_modules`；Python 上述独立环境。
+- 默认构建：`D:\rubbish\zhongjian\build\医院信息系统\frontend`
+- 默认演示库/本地密钥：`D:\rubbish\zhongjian\artifacts\医院信息系统\demo`。
 
-项目交付包含 React 前端、FastAPI 后端、数据库模型、三层测试、Docker/Compose 配置、CI 门禁和课程验收文档。所有演示数据均为虚构数据。
-
-## 技术栈
-
-- 前端：React、Vite、TypeScript、Vitest
-- 后端：FastAPI、Pydantic、SQLAlchemy、Alembic
-- 数据库：本地 SQLite；Compose/共享环境支持 PostgreSQL
-- 安全：JWT、bcrypt/pwdlib、RBAC、审计日志
-- 质量：pytest、Ruff、Playwright、GitHub Actions
-
-## 本地启动
-
-环境要求：Python 3.11+、Node.js 20+、npm。PowerShell 命令从仓库根目录执行。
-
-### 后端
-
+在项目根目录执行（首次加 Build，之后可省略）：
 ```powershell
-Set-Location backend
-python -m venv .venv
-./.venv/Scripts/Activate.ps1
-python -m pip install --upgrade pip
-pip install -r requirements.txt
-Copy-Item .env.example .env
-python -m scripts.init_db
-python -m scripts.seed
-python -m uvicorn app.main:app --reload --port 8000
+.\start-demo.ps1 -Build
 ```
+浏览器打开 [本机演示](http://127.0.0.1:8000)。前端与 API 共用一个进程/端口，当前终端按 Ctrl+C 停止。
+脚本先检查端口，不终止已有进程；可用 `-Port 8001` 更换端口。
+指定独立演示数据可用 `-DatabasePath D:\你的目录\演示.sqlite`，不清空其他数据库；迁移前自动备份旧库，重复 seed 不恢复已消耗库存。
 
-成功判据：访问 `http://localhost:8000/health` 返回 `status=ok`，Swagger 位于 `http://localhost:8000/docs`。
+其他电脑可用 `-PythonPath`、`-NodePath`、`-WebPath` 指定真实路径。交付包含 web 构建时无需 Node 构建；Python 依赖仍需提前准备。脚本不是包含所有运行时的免安装 exe。
 
-### 前端
-
-另开 PowerShell：
-
+## 新电脑准备环境
+先检查 Python 3.11+、Node 20.19+/22.12+ 和 D 盘空间。示例只安装项目依赖，不修改全局环境：
 ```powershell
-Set-Location frontend
-npm ci
-Copy-Item .env.example .env
-npm run dev
+# 替换“现有Python”为本机已安装解释器路径
+& '现有Python\python.exe' -m venv 'D:\rubbish\zhongjian\envs\医院信息系统\dev'
+$env:PIP_CACHE_DIR='D:\rubbish\zhongjian\caches\python'
+$env:npm_config_cache='D:\rubbish\zhongjian\caches\node'
+& 'D:\rubbish\zhongjian\envs\医院信息系统\dev\Scripts\python.exe' -m pip install -r backend/requirements.txt
+npm ci --prefix frontend
 ```
+缓存/临时目录应放 D 盘；D 盘不可用时由操作者指定位置，不自动改写 C 盘。当前环境测得规模和验证结果见 docs/test-report.md。
 
-成功判据：访问 `http://localhost:5173/login`，前端 API 地址默认为 `http://localhost:8000/api`。
+## 虚构演示账号
+统一密码 `Demo123!`。不包含真实患者；教学药品与用法不可作为诊疗参考。
+| 账号 | 角色 |
+|---|---|
+| admin.demo | 管理员：排班、药品、导入、统计、审计、禁用账号 |
+| doctor.demo | 医生：本人待诊、草稿编辑、提交处方 |
+| cashier.demo | 收费员：患者、挂号、取消、收费 |
+| pharmacist.demo | 药师：药品/批次、待发药、确认发药 |
+可在“修改密码”页变更。共享使用前更改公开演示密码；真实密钥不得进入 Git。
 
-## 演示账号
+## 手动后端命令
+在 backend 目录，用项目解释器运行 `-m scripts.init_db`、`-m scripts.seed`、`-m uvicorn app.main:app --host 127.0.0.1 --port 8000`。
+必须先迁移再启动；应用不再用 create_all 隐式改表。接口文档：[/docs](http://127.0.0.1:8000/docs)；健康检查：[/health](http://127.0.0.1:8000/health)。
 
-账号均为虚构课程数据，统一密码为 `Demo123!`：
-
-| 账号 | 角色 | 主要操作 |
-|---|---|---|
-| `admin.demo` | 管理员 | 审计查询、管理探针 |
-| `doctor.demo` | 医生 | 创建和提交处方 |
-| `cashier.demo` | 收费员 | 查询号源、挂号、收费 |
-| `pharmacist.demo` | 药师 | 发药 |
-
-演示环境不得使用真实患者信息。部署到共享或云环境后必须替换密码和 `JWT_SECRET`。
-
-## 实现状态
-
-| 功能 | 状态 | 关键验收 |
-|---|---|---|
-| 登录、JWT、RBAC | 已实现 | 错误密码 401，越权 403 |
-| 排班、号源、挂号 | 已实现 | 号源减 1、排队号唯一、号源不足 409 |
-| 处方、收费、扣库存 | 已实现 | 后端重算金额，库存不足整体回滚 |
-| 药房发药、审计日志 | 已实现 | 仅已收费处方可发药，写操作可查询 |
-| CSV 导入、报表 | 扩展 | 需单独验收 |
-| 智能分诊 | 已实现扩展 | 固定结构、免责声明和 provider 失败兜底 |
-| 住院、真实医保/支付、区域平台联调 | 不纳入 MVP | 不得在演示中伪装完成 |
-
-## API 速查
-
-所有业务接口以 `/api` 开头，写操作需要 Bearer JWT。
-
-```text
-POST /api/auth/login                    OAuth2 form 登录
-GET  /api/auth/me                       当前用户
-GET  /api/admin/ping                    admin 权限探针
-GET  /api/schedules?dept_id=&date=      查询排班号源
-POST /api/registrations                 收费员/管理员挂号
-POST /api/prescriptions                 医生创建处方
-POST /api/prescriptions/{id}/submit     提交待收费
-POST /api/prescriptions/{id}/charge     收费并扣库存
-POST /api/prescriptions/{id}/dispense   药师发药
-GET  /api/audit-logs                    管理员查询审计
-POST /api/triage                        登录用户获取辅助分诊建议
-```
-
-金额由后端根据药品价格计算，前端金额输入不被信任；收费、处方状态和库存处于同一事务边界。
-
-`/api/triage` 只接受症状文本，返回候选科室、紧急程度、说明、免责声明和来源；不能诊断、开药或改变处方/收费。provider 超时、错误或不可用时返回固定兜底结果。
-
-## 测试和质量门禁
-
+## 验证
 ```powershell
-python -m pytest -q
-python -m ruff check backend tests
-python -m ruff format --check backend tests
+& 'D:\rubbish\zhongjian\envs\医院信息系统\dev\Scripts\python.exe' -m pytest -q
+& 'D:\rubbish\zhongjian\envs\医院信息系统\dev\Scripts\python.exe' -m ruff check backend tests
+& 'D:\rubbish\zhongjian\envs\医院信息系统\dev\Scripts\python.exe' -m ruff format --check backend tests
 npm run lint --prefix frontend
 npm run typecheck --prefix frontend
 npm run test --prefix frontend
-npm run build --prefix frontend
-Set-Location tests/e2e
-npm ci
-npx playwright install chromium
-npm test
+npm run build --prefix frontend -- --outDir D:\rubbish\zhongjian\build\医院信息系统\frontend
 ```
+测试、覆盖率、缓存建议分别用 TEMP/TMP、COVERAGE_FILE、RUFF_CACHE_DIR 指向独立 D 盘任务目录；详细记录见测试报告。
+SQLite 写请求在身份查询前用 BEGIN IMMEDIATE 取得写预留；小型本机演示选择串行写，测试验证独立请求争抢号源和库存。未宣称支持高并发生产环境。
+浏览器交互按工作区规则只使用 Chrome DevTools MCP；仓库的 Playwright 主流程用于获授权的 CI 环境，不绕过本机工具限制运行。
 
-当前最近一次完整验证：后端/契约 `22 passed`，前端 Vitest `16 passed`，Playwright 主流程 `1 passed`。`python-jose` 的弃用警告已记录，不影响断言结果；发布前仍以 CI 最新结果和 Docker 构建证据为准。
+## 可选 Docker
+`docker compose up --build` 启动 API + Web，SQLite 数据持久化到命名卷。本机无 Docker CLI，容器运行验证以实际 CI 为准；本次交付无需 Docker，也不依赖公网。
+新 CI 配置包含构建、启动和健康冒烟；本轮本地验证不包含远程 CI 结果，推送后应查看本分支最新运行，不能引用旧版本成功记录代替。
+不要执行 `docker compose down -v` 清除演示数据。
 
-## Docker 和 CI
-
-```powershell
-docker compose up --build
-```
-
-Web 映射 `http://localhost:5173`，API 映射 `http://localhost:8000`，PostgreSQL 使用命名卷。生产环境必须覆盖本地默认密码和 JWT 密钥。
-
-验收证据边界：当前验收机未安装 Docker CLI，因此本地没有声称 `docker build` 或 `docker compose up` 已通过；CI 工作流会在 Linux runner 上真实执行两个镜像的构建、Compose 配置校验和应用镜像构建，失败会阻断合并。发布前应保存对应 CI run 链接和日志。
-
-CI 在 push/PR 上执行根目录 pytest、后端 Ruff 和测试、前端 lint/typecheck/Vitest/build、Playwright E2E、Compose 校验和真实 Docker 镜像构建。E2E 失败会上传报告、截图、视频和 trace，并阻断合并。
-
-## 课程验收材料
-
-- [课程验收材料包总入口](docs/course-acceptance/README.md)
-- [最终验收清单](docs/final-acceptance-checklist.md)
-- [7 分钟演示脚本](docs/demo-script.md)
-- [AI 医疗合规说明](docs/ai-compliance.md)
-- [测试报告](docs/test-report.md)
-- [Playwright 验收说明](docs/e2e-acceptance.md)
-- [CI/CD 说明](docs/ci-cd.md)
-- [AI 开发和工程规则](AGENTS.md)
-
-验收时必须真实操作，不使用录屏、静态按钮或假数据掩盖未实现功能。
-
+## 交付材料
+- docs/课程设计报告.md：选题、需求、架构、数据与设计。
+- docs/requirements.md、docs/er.md、docs/api.md：功能矩阵、ER/字典、API。
+- docs/test-report.md、docs/security-review.md：验证与安全复测。
+- docs/ai-development-log.md：本次真实 AI 协作记录。
+- docs/demo-script.md：5 分钟演示 + 2 分钟答辩。
+- deliverables/：本项目演示 PPT；ppt/ 仍是老师课件。

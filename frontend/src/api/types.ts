@@ -58,6 +58,8 @@ export interface PrescriptionItemInput {
   dosage?: string;
   frequency?: string;
   days?: number;
+  drug_name?: string;
+  specification?: string;
 }
 
 export interface Prescription {
@@ -69,6 +71,9 @@ export interface Prescription {
   status: string;
   total_amount: string;
   items: Array<PrescriptionItemInput & { id: number; unit_price: string }>;
+  patient_name?: string;
+  patient_no?: string;
+  doctor_name?: string;
 }
 
 export interface Charge {

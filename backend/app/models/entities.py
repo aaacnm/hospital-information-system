@@ -4,7 +4,18 @@ from datetime import date, datetime
 from decimal import Decimal
 from enum import StrEnum
 
-from sqlalchemy import Date, DateTime, ForeignKey, Integer, Numeric, String, Text, UniqueConstraint
+from sqlalchemy import (
+    CheckConstraint,
+    Date,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    Numeric,
+    String,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 
@@ -24,8 +35,8 @@ class UserStatus(StrEnum):
 
 
 class RegistrationStatus(StrEnum):
-    PENDING = "待支付"
-    PAID = "已支付"
+    PENDING = "候诊"
+    PAID = "就诊中"
     COMPLETED = "已完成"
     CANCELLED = "已取消"
 
@@ -107,6 +118,9 @@ class Schedule(BaseEntity):
     __tablename__ = "schedules"
     __table_args__ = (
         UniqueConstraint("doctor_id", "visit_date", "period", name="uq_doctor_schedule"),
+        CheckConstraint(
+            "remain_quota >= 0 AND remain_quota <= total_quota", name="ck_schedule_quota"
+        ),
     )
 
     doctor_id: Mapped[int] = mapped_column(ForeignKey("doctors.id"), index=True)
@@ -122,6 +136,10 @@ class Schedule(BaseEntity):
 
 class Drug(BaseEntity):
     __tablename__ = "drugs"
+    __table_args__ = (
+        CheckConstraint("stock_qty >= 0", name="ck_drug_stock"),
+        CheckConstraint("unit_price > 0", name="ck_drug_price"),
+    )
 
     generic_name: Mapped[str] = mapped_column(String(120), index=True)
     trade_name: Mapped[str | None] = mapped_column(String(120))
@@ -134,6 +152,19 @@ class Drug(BaseEntity):
     status: Mapped[str] = mapped_column(String(20), default="active")
 
     prescription_items: Mapped[list[PrescriptionItem]] = relationship(back_populates="drug")
+
+
+class DrugStock(BaseEntity):
+    __tablename__ = "drug_stocks"
+    __table_args__ = (
+        UniqueConstraint("drug_id", "batch_no", name="uq_drug_batch"),
+        CheckConstraint("quantity >= 0", name="ck_batch_quantity"),
+    )
+
+    drug_id: Mapped[int] = mapped_column(ForeignKey("drugs.id"), index=True)
+    batch_no: Mapped[str] = mapped_column(String(64))
+    quantity: Mapped[int] = mapped_column(Integer)
+    expiry_date: Mapped[date] = mapped_column(Date, index=True)
 
 
 class RegistrationOrder(BaseEntity):
@@ -176,9 +207,22 @@ class Prescription(BaseEntity):
         back_populates="prescription", uselist=False
     )
 
+    @property
+    def patient_name(self) -> str:
+        return self.registration.patient.name
+
+    @property
+    def patient_no(self) -> str:
+        return self.registration.patient.patient_no
+
+    @property
+    def doctor_name(self) -> str:
+        return self.registration.schedule.doctor.name
+
 
 class PrescriptionItem(BaseEntity):
     __tablename__ = "prescription_items"
+    __table_args__ = (CheckConstraint("quantity > 0", name="ck_item_quantity"),)
 
     prescription_id: Mapped[int] = mapped_column(ForeignKey("prescriptions.id"), index=True)
     drug_id: Mapped[int] = mapped_column(ForeignKey("drugs.id"), index=True)
@@ -191,9 +235,18 @@ class PrescriptionItem(BaseEntity):
     prescription: Mapped[Prescription] = relationship(back_populates="items")
     drug: Mapped[Drug] = relationship(back_populates="prescription_items")
 
+    @property
+    def drug_name(self) -> str:
+        return self.drug.generic_name
+
+    @property
+    def specification(self) -> str:
+        return self.drug.specification
+
 
 class ChargeOrder(BaseEntity):
     __tablename__ = "charge_orders"
+    __table_args__ = (Index("ix_charge_paid_at", "paid_at"),)
 
     prescription_id: Mapped[int] = mapped_column(ForeignKey("prescriptions.id"), unique=True)
     amount: Mapped[Decimal] = mapped_column(Numeric(12, 2))
@@ -218,6 +271,7 @@ class DispenseOrder(BaseEntity):
 
 class AuditLog(BaseEntity):
     __tablename__ = "audit_logs"
+    __table_args__ = (Index("ix_audit_time_id", "created_at", "id"),)
 
     user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), index=True)
     action: Mapped[str] = mapped_column(String(80), index=True)

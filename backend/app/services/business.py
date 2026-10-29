@@ -3,11 +3,13 @@ from __future__ import annotations
 import csv
 import io
 import json
+from collections import Counter
 from datetime import UTC, date, datetime
 from decimal import Decimal
 
 from fastapi import HTTPException, status
-from sqlalchemy import func
+from pydantic import ValidationError
+from sqlalchemy import func, tuple_
 from sqlalchemy.orm import Session, joinedload
 
 from app.models import (
@@ -16,6 +18,7 @@ from app.models import (
     DispenseOrder,
     Doctor,
     Drug,
+    DrugStock,
     Patient,
     Prescription,
     PrescriptionItem,
@@ -25,6 +28,7 @@ from app.models import (
 )
 from app.models.entities import OrderStatus, PrescriptionStatus, RegistrationStatus
 from app.schemas.business import DrugCreate, PatientCreate, PrescriptionCreate, RegistrationCreate
+from app.services.rules import business_date, day_bounds, price_total
 
 
 def _error(code: str, message: str, http_status: int) -> HTTPException:
@@ -46,6 +50,7 @@ def _audit(
             action=action,
             resource_type=resource_type,
             resource_id=str(resource_id),
+            ip=db.info.get("client_ip"),
             before_json=json.dumps(before, ensure_ascii=False) if before else None,
             after_json=json.dumps(after, ensure_ascii=False) if after else None,
         )
@@ -63,8 +68,16 @@ def list_schedules(db: Session, dept_id: int | None, visit_date: date) -> list[S
     return query.order_by(Schedule.period, Schedule.id).all()
 
 
-def list_patients(db: Session, keyword: str | None = None) -> list[Patient]:
+def list_patients(
+    db: Session, keyword: str | None = None, user: User | None = None
+) -> list[Patient]:
     query = db.query(Patient)
+    if user and user.role == "doctor":
+        if user.doctor is None:
+            raise _error("DOCTOR_PROFILE_REQUIRED", "未绑定医生", 403)
+        query = query.filter(
+            Patient.registrations.any(RegistrationOrder.doctor_id == user.doctor.id)
+        )
     if keyword:
         pattern = f"%{keyword.strip()}%"
         query = query.filter((Patient.patient_no.like(pattern)) | (Patient.name.like(pattern)))
@@ -102,6 +115,15 @@ def create_drug(db: Session, payload: DrugCreate, user: User) -> Drug:
     drug = Drug(**payload.model_dump())
     db.add(drug)
     db.flush()
+    if drug.stock_qty:
+        db.add(
+            DrugStock(
+                drug_id=drug.id,
+                batch_no="INITIAL",
+                quantity=drug.stock_qty,
+                expiry_date=drug.expiry_date or date(2099, 12, 31),
+            )
+        )
     _audit(db, user.id, "drug.create", "drug", drug.id, after={"generic_name": drug.generic_name})
     db.commit()
     db.refresh(drug)
@@ -148,10 +170,26 @@ def import_drugs(db: Session, content: bytes, user: User) -> dict:
             status.HTTP_400_BAD_REQUEST,
         )
     errors: list[dict[str, int | str]] = []
-    valid: list[Drug] = []
+    valid: list[DrugCreate] = []
     seen: set[tuple[str, str]] = set()
-    rows = list(reader)
+    rows = []
+    for row in reader:
+        rows.append(row)
+        if len(rows) > 5000:
+            raise _error("CSV_ROWS", "每次最多导入 5000 行", 400)
+    keys = list(
+        {((row.get("通用名") or "").strip(), (row.get("规格") or "").strip()) for row in rows}
+    )
+    existing = set()
+    for offset in range(0, len(keys), 200):
+        existing.update(
+            db.query(Drug.generic_name, Drug.specification)
+            .filter(tuple_(Drug.generic_name, Drug.specification).in_(keys[offset : offset + 200]))
+            .all()
+        )
+    total = 0
     for row_number, row in enumerate(rows, start=2):
+        total += 1
         try:
             generic_name = (row.get("通用名") or "").strip()
             specification = (row.get("规格") or "").strip()
@@ -159,9 +197,8 @@ def import_drugs(db: Session, content: bytes, user: User) -> dict:
             if not generic_name or not specification or not dosage_form:
                 raise ValueError("通用名、规格和剂型不能为空")
             key = (generic_name, specification)
-            if key in seen:
-                raise ValueError("文件内药品重复")
-            seen.add(key)
+            if key in seen or key in existing:
+                raise ValueError("药品名称和规格已存在")
             unit_price = Decimal((row.get("单价") or "").strip())
             stock_qty = int((row.get("库存数量") or "").strip())
             expiry_raw = (row.get("有效期") or "").strip()
@@ -169,7 +206,7 @@ def import_drugs(db: Session, content: bytes, user: User) -> dict:
             if unit_price <= 0 or stock_qty < 0:
                 raise ValueError("单价必须大于0，库存数量不能为负")
             valid.append(
-                Drug(
+                DrugCreate(
                     generic_name=generic_name,
                     trade_name=(row.get("商品名") or "").strip() or None,
                     specification=specification,
@@ -180,10 +217,24 @@ def import_drugs(db: Session, content: bytes, user: User) -> dict:
                     expiry_date=expiry_date,
                 )
             )
-        except (ValueError, ArithmeticError) as exc:
+            seen.add(key)
+        except (ValueError, ArithmeticError, ValidationError) as exc:
             errors.append({"row": row_number, "reason": str(exc)})
-    db.add_all(valid)
+    drugs = [Drug(**payload.model_dump()) for payload in valid]
+    db.add_all(drugs)
     db.flush()
+    db.add_all(
+        [
+            DrugStock(
+                drug_id=drug.id,
+                batch_no="IMPORT",
+                quantity=drug.stock_qty,
+                expiry_date=drug.expiry_date or date(2099, 12, 31),
+            )
+            for drug in drugs
+            if drug.stock_qty
+        ]
+    )
     _audit(
         db,
         user.id,
@@ -193,7 +244,7 @@ def import_drugs(db: Session, content: bytes, user: User) -> dict:
         after={"success": len(valid), "failure": len(errors)},
     )
     db.commit()
-    return {"total": len(rows), "success": len(valid), "failure": len(errors), "errors": errors}
+    return {"total": total, "success": len(valid), "failure": len(errors), "errors": errors}
 
 
 def cancel_registration(db: Session, registration_id: int, user: User) -> RegistrationOrder:
@@ -231,10 +282,12 @@ def cancel_registration(db: Session, registration_id: int, user: User) -> Regist
 
 
 def today_report(db: Session, report_date: date) -> dict:
+    start, end = day_bounds(report_date)
     charged_amount = (
         db.query(func.coalesce(func.sum(ChargeOrder.amount), 0))
         .filter(
-            func.date(ChargeOrder.paid_at) == report_date.isoformat(),
+            ChargeOrder.paid_at >= start,
+            ChargeOrder.paid_at < end,
             ChargeOrder.status == OrderStatus.COMPLETED.value,
         )
         .scalar()
@@ -242,12 +295,17 @@ def today_report(db: Session, report_date: date) -> dict:
     return {
         "date": report_date,
         "registration_count": db.query(RegistrationOrder)
-        .filter(func.date(RegistrationOrder.created_at) == report_date.isoformat())
+        .filter(
+            RegistrationOrder.created_at >= start,
+            RegistrationOrder.created_at < end,
+            RegistrationOrder.status != RegistrationStatus.CANCELLED.value,
+        )
         .count(),
         "charged_amount": Decimal(str(charged_amount or 0)),
         "dispensed_count": db.query(DispenseOrder)
         .filter(
-            func.date(DispenseOrder.dispensed_at) == report_date.isoformat(),
+            DispenseOrder.dispensed_at >= start,
+            DispenseOrder.dispensed_at < end,
             DispenseOrder.status == OrderStatus.COMPLETED.value,
         )
         .count(),
@@ -262,6 +320,8 @@ def create_registration(db: Session, payload: RegistrationCreate, user: User) ->
         raise _error("SCHEDULE_NOT_FOUND", "排班不存在", status.HTTP_404_NOT_FOUND)
     if schedule.status != "active":
         raise _error("SCHEDULE_INACTIVE", "排班不可用", status.HTTP_409_CONFLICT)
+    if schedule.visit_date < business_date():
+        raise _error("SCHEDULE_PAST", "不能挂过期排班", status.HTTP_409_CONFLICT)
     if schedule.remain_quota <= 0:
         raise _error("QUOTA_EXHAUSTED", "号源已满", status.HTTP_409_CONFLICT)
     patient = db.get(Patient, payload.patient_id)
@@ -305,14 +365,19 @@ def create_prescription(db: Session, payload: PrescriptionCreate, user: User) ->
         raise _error(
             "DOCTOR_PROFILE_REQUIRED", "当前医生账号未绑定医生档案", status.HTTP_403_FORBIDDEN
         )
-    registration = db.get(RegistrationOrder, payload.registration_id)
+    registration = (
+        db.query(RegistrationOrder)
+        .filter(RegistrationOrder.id == payload.registration_id)
+        .with_for_update(of=RegistrationOrder)
+        .first()
+    )
     if registration is None:
         raise _error("REGISTRATION_NOT_FOUND", "挂号单不存在", status.HTTP_404_NOT_FOUND)
     if registration.doctor_id != doctor.id:
         raise _error(
             "REGISTRATION_FORBIDDEN", "不能为其他医生的挂号开方", status.HTTP_403_FORBIDDEN
         )
-    if registration.status == RegistrationStatus.CANCELLED.value:
+    if registration.status not in {RegistrationStatus.PENDING.value, RegistrationStatus.PAID.value}:
         raise _error("REGISTRATION_CANCELLED", "已取消挂号不能开方", status.HTTP_409_CONFLICT)
     if registration.prescription is not None:
         raise _error("PRESCRIPTION_EXISTS", "该挂号已有处方", status.HTTP_409_CONFLICT)
@@ -327,8 +392,14 @@ def create_prescription(db: Session, payload: PrescriptionCreate, user: User) ->
     )
     db.add(prescription)
     db.flush()
+    drug_map = {
+        drug.id: drug
+        for drug in db.query(Drug)
+        .filter(Drug.id.in_({item.drug_id for item in payload.items}))
+        .all()
+    }
     for item in payload.items:
-        drug = db.get(Drug, item.drug_id)
+        drug = drug_map.get(item.drug_id)
         if drug is None or drug.status != "active":
             db.rollback()
             raise _error("DRUG_NOT_FOUND", "药品不存在或已停用", status.HTTP_400_BAD_REQUEST)
@@ -342,6 +413,10 @@ def create_prescription(db: Session, payload: PrescriptionCreate, user: User) ->
                 days=item.days,
             )
         )
+    prescription.total_amount = price_total(
+        (item.unit_price, item.quantity) for item in prescription.items
+    )
+    registration.status = RegistrationStatus.PAID.value
     _audit(
         db,
         user.id,
@@ -379,12 +454,61 @@ def submit_prescription(db: Session, prescription_id: int, user: User) -> Prescr
     return prescription
 
 
+def edit_prescription(db: Session, prescription_id: int, payload: PrescriptionCreate, user: User):
+    rx = (
+        db.query(Prescription)
+        .filter_by(id=prescription_id)
+        .with_for_update(of=Prescription)
+        .first()
+    )
+    if rx is None:
+        raise _error("PRESCRIPTION_NOT_FOUND", "处方不存在", 404)
+    if user.doctor is None or user.doctor.id != rx.doctor_id:
+        raise _error("FORBIDDEN", "只能编辑本人处方", 403)
+    if rx.status != "草稿" or payload.registration_id != rx.registration_id:
+        raise _error("INVALID_STATE", "仅能编辑原挂号下的草稿处方", 409)
+    drug_map = {
+        drug.id: drug
+        for drug in db.query(Drug)
+        .filter(Drug.id.in_({item.drug_id for item in payload.items}), Drug.status == "active")
+        .all()
+    }
+    if len(drug_map) != len({item.drug_id for item in payload.items}):
+        raise _error("DRUG_NOT_FOUND", "存在不可用药品", 400)
+    before = {"amount": str(rx.total_amount), "diagnosis": rx.diagnosis_code}
+    db.query(PrescriptionItem).filter_by(prescription_id=rx.id).delete(synchronize_session=False)
+    db.expire(rx, ["items"])
+    rx.items = [
+        PrescriptionItem(
+            drug_id=item.drug_id,
+            quantity=item.quantity,
+            unit_price=drug_map[item.drug_id].unit_price,
+            dosage=item.dosage,
+            frequency=item.frequency,
+            days=item.days,
+        )
+        for item in payload.items
+    ]
+    rx.diagnosis_code, rx.diagnosis_name = payload.diagnosis_code, payload.diagnosis_name
+    rx.total_amount = price_total((item.unit_price, item.quantity) for item in rx.items)
+    _audit(
+        db,
+        user.id,
+        "prescription.edit",
+        "prescription",
+        rx.id,
+        before,
+        {"amount": str(rx.total_amount)},
+    )
+    db.commit()
+    return rx
+
+
 def charge_prescription(db: Session, prescription_id: int, user: User) -> ChargeOrder:
     prescription = (
         db.query(Prescription)
-        .options(joinedload(Prescription.items))
         .filter(Prescription.id == prescription_id)
-        .with_for_update()
+        .with_for_update(of=Prescription)
         .first()
     )
     if prescription is None:
@@ -394,29 +518,67 @@ def charge_prescription(db: Session, prescription_id: int, user: User) -> Charge
     if prescription.charge_order is not None:
         raise _error("CHARGE_EXISTS", "处方已收费，不能重复收费", status.HTTP_409_CONFLICT)
 
-    total = Decimal("0.00")
-    drug_updates: list[tuple[Drug, int]] = []
+    quantities = Counter()
     for item in prescription.items:
-        drug = db.query(Drug).filter(Drug.id == item.drug_id).with_for_update().first()
+        quantities[item.drug_id] += item.quantity
+    drugs = (
+        db.query(Drug)
+        .filter(Drug.id.in_(quantities))
+        .order_by(Drug.id)
+        .with_for_update(of=Drug)
+        .all()
+    )
+    drug_map = {drug.id: drug for drug in drugs}
+    stocks = (
+        db.query(DrugStock)
+        .filter(DrugStock.drug_id.in_(quantities))
+        .order_by(DrugStock.expiry_date, DrugStock.id)
+        .with_for_update(of=DrugStock)
+        .all()
+    )
+    stock_map: dict[int, list[DrugStock]] = {drug_id: [] for drug_id in quantities}
+    for stock in stocks:
+        stock_map[stock.drug_id].append(stock)
+    allocations = []
+    for drug_id, quantity in quantities.items():
+        drug = drug_map.get(drug_id)
         if drug is None or drug.status != "active":
             db.rollback()
             raise _error("DRUG_NOT_FOUND", "收费药品不存在或已停用", status.HTTP_400_BAD_REQUEST)
-        if drug.expiry_date is not None and drug.expiry_date < date.today():
+        if not stock_map[drug_id] and drug.stock_qty:
+            stock = DrugStock(
+                drug_id=drug.id,
+                batch_no="LEGACY",
+                quantity=drug.stock_qty,
+                expiry_date=drug.expiry_date or date(2099, 12, 31),
+            )
+            db.add(stock)
+            stock_map[drug_id].append(stock)
+        usable = [stock for stock in stock_map[drug_id] if stock.expiry_date >= business_date()]
+        if not usable and drug.stock_qty:
             db.rollback()
             raise _error("DRUG_EXPIRED", "药品已过期", status.HTTP_400_BAD_REQUEST)
-        if drug.stock_qty < item.quantity:
+        if sum(stock.quantity for stock in usable) < quantity or drug.stock_qty < quantity:
             db.rollback()
             raise _error("INSUFFICIENT_STOCK", "药品库存不足", status.HTTP_400_BAD_REQUEST)
-        item.unit_price = drug.unit_price
-        total += drug.unit_price * item.quantity
-        drug_updates.append((drug, item.quantity))
-
-    for drug, quantity in drug_updates:
-        drug.stock_qty -= quantity
+        remaining = quantity
+        for stock in usable:
+            take = min(remaining, stock.quantity)
+            if take:
+                allocations.append((stock, take))
+                remaining -= take
+            if remaining == 0:
+                break
     before = {
         "status": prescription.status,
-        "stock": {str(d.id): d.stock_qty + q for d, q in drug_updates},
+        "stock": {str(drug.id): drug.stock_qty for drug in drugs},
     }
+    for stock, quantity in allocations:
+        stock.quantity -= quantity
+    for drug in drugs:
+        drug.stock_qty -= quantities[drug.id]
+    # Preserve prescription prices; later price changes affect new prescriptions.
+    total = price_total((item.unit_price, item.quantity) for item in prescription.items)
     prescription.total_amount = total
     prescription.status = PrescriptionStatus.PAID.value
     charge = ChargeOrder(
@@ -435,7 +597,14 @@ def charge_prescription(db: Session, prescription_id: int, user: User) -> Charge
         "prescription",
         prescription.id,
         before,
-        {"status": prescription.status, "amount": str(total)},
+        {
+            "status": prescription.status,
+            "amount": str(total),
+            "stock": {str(drug.id): drug.stock_qty for drug in drugs},
+            "batches": [
+                {"batch": stock.batch_no, "quantity": quantity} for stock, quantity in allocations
+            ],
+        },
     )
     db.commit()
     db.refresh(charge)
@@ -443,7 +612,12 @@ def charge_prescription(db: Session, prescription_id: int, user: User) -> Charge
 
 
 def dispense_prescription(db: Session, prescription_id: int, user: User) -> DispenseOrder:
-    prescription = db.get(Prescription, prescription_id)
+    prescription = (
+        db.query(Prescription)
+        .filter(Prescription.id == prescription_id)
+        .with_for_update(of=Prescription)
+        .first()
+    )
     if prescription is None:
         raise _error("PRESCRIPTION_NOT_FOUND", "处方不存在", status.HTTP_404_NOT_FOUND)
     if prescription.status != PrescriptionStatus.PAID.value:
@@ -454,6 +628,7 @@ def dispense_prescription(db: Session, prescription_id: int, user: User) -> Disp
         raise _error("DISPENSE_EXISTS", "处方已发药，不能重复发药", status.HTTP_409_CONFLICT)
     before = {"status": prescription.status}
     prescription.status = PrescriptionStatus.DISPENSED.value
+    prescription.registration.status = RegistrationStatus.COMPLETED.value
     dispense = DispenseOrder(
         prescription_id=prescription.id,
         pharmacist_id=user.id,

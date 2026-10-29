@@ -1,6 +1,6 @@
 from functools import lru_cache
 
-from pydantic import Field
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -18,6 +18,15 @@ class Settings(BaseSettings):
     ai_api_key: str | None = None
     ai_base_url: str = "https://api.openai.com/v1"
     ai_model: str = "gpt-4o-mini"
+    frontend_dist: str | None = None
+
+    @model_validator(mode="after")
+    def production_secret(self):
+        if self.environment == "production" and (
+            self.jwt_secret.startswith(("change-me", "replace-with")) or len(self.jwt_secret) < 32
+        ):
+            raise ValueError("生产环境必须配置至少 32 字符的独立 JWT_SECRET")
+        return self
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 

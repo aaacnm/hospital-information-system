@@ -1,0 +1,205 @@
+{
+  "kind": "HTTP API smoke, fictional teaching data",
+  "checks": [
+    {
+      "role": "admin",
+      "route": "/reports/today",
+      "status": 200,
+      "count": null
+    },
+    {
+      "role": "admin",
+      "route": "/stock-alerts?kind=low",
+      "status": 200,
+      "count": 2
+    },
+    {
+      "role": "admin",
+      "route": "/stock-alerts?kind=expired",
+      "status": 200,
+      "count": 1
+    },
+    {
+      "role": "doctor",
+      "route": "/registrations?page_size=100",
+      "status": 200,
+      "count": 18
+    },
+    {
+      "role": "doctor",
+      "route": "/diagnoses?keyword=J06",
+      "status": 200,
+      "count": 1
+    },
+    {
+      "role": "doctor",
+      "route": "/registrations/42/clinical-record",
+      "status": 200
+    },
+    {
+      "role": "doctor",
+      "route": "/patients/6/timeline",
+      "status": 200
+    },
+    {
+      "role": "cashier",
+      "route": "/billing-records",
+      "status": 200,
+      "count": 38
+    },
+    {
+      "role": "cashier",
+      "route": "/prescriptions?status=待收费",
+      "status": 200,
+      "count": 2
+    },
+    {
+      "role": "cashier",
+      "route": "/prescriptions/{id}/receipt",
+      "status": 200
+    },
+    {
+      "role": "pharmacist",
+      "route": "/stock-movements",
+      "status": 200,
+      "count": 66
+    },
+    {
+      "role": "pharmacist",
+      "route": "/stock-alerts?kind=expiring",
+      "status": 200,
+      "count": 1
+    }
+  ],
+  "health": {
+    "status": "ok",
+    "service": "hospital-information-system-api"
+  },
+  "range": {
+    "start_date": "2026-10-23",
+    "end_date": "2026-10-29",
+    "days": [
+      {
+        "date": "2026-10-23",
+        "registration_count": 3,
+        "charged_amount": "34.90",
+        "refunded_amount": "0.00",
+        "net_amount": "34.90",
+        "dispensed_count": 3
+      },
+      {
+        "date": "2026-10-24",
+        "registration_count": 9,
+        "charged_amount": "226.40",
+        "refunded_amount": "0.00",
+        "net_amount": "226.40",
+        "dispensed_count": 9
+      },
+      {
+        "date": "2026-10-25",
+        "registration_count": 6,
+        "charged_amount": "131.20",
+        "refunded_amount": "0.00",
+        "net_amount": "131.20",
+        "dispensed_count": 6
+      },
+      {
+        "date": "2026-10-26",
+        "registration_count": 3,
+        "charged_amount": "82.20",
+        "refunded_amount": "0.00",
+        "net_amount": "82.20",
+        "dispensed_count": 3
+      },
+      {
+        "date": "2026-10-27",
+        "registration_count": 9,
+        "charged_amount": "201.60",
+        "refunded_amount": "0.00",
+        "net_amount": "201.60",
+        "dispensed_count": 9
+      },
+      {
+        "date": "2026-10-28",
+        "registration_count": 6,
+        "charged_amount": "151.20",
+        "refunded_amount": "0.00",
+        "net_amount": "151.20",
+        "dispensed_count": 6
+      },
+      {
+        "date": "2026-10-29",
+        "registration_count": 8,
+        "charged_amount": "12.80",
+        "refunded_amount": "0.00",
+        "net_amount": "12.80",
+        "dispensed_count": 1
+      }
+    ],
+    "totals": {
+      "registration_count": 44,
+      "dispensed_count": 37,
+      "charged_amount": "840.30",
+      "refunded_amount": "0.00",
+      "net_amount": "840.30"
+    },
+    "departments": [
+      {
+        "name": "内科",
+        "registration_count": 18,
+        "charged_amount": "298.70",
+        "refunded_amount": "0.00",
+        "net_amount": "298.70"
+      },
+      {
+        "name": "全科门诊",
+        "registration_count": 0,
+        "charged_amount": "0.00",
+        "refunded_amount": "0.00",
+        "net_amount": "0.00"
+      },
+      {
+        "name": "外科",
+        "registration_count": 0,
+        "charged_amount": "0.00",
+        "refunded_amount": "0.00",
+        "net_amount": "0.00"
+      },
+      {
+        "name": "消化内科",
+        "registration_count": 13,
+        "charged_amount": "262.80",
+        "refunded_amount": "0.00",
+        "net_amount": "262.80"
+      },
+      {
+        "name": "呼吸内科",
+        "registration_count": 13,
+        "charged_amount": "278.80",
+        "refunded_amount": "0.00",
+        "net_amount": "278.80"
+      },
+      {
+        "name": "儿科",
+        "registration_count": 0,
+        "charged_amount": "0.00",
+        "refunded_amount": "0.00",
+        "net_amount": "0.00"
+      },
+      {
+        "name": "妇产科",
+        "registration_count": 0,
+        "charged_amount": "0.00",
+        "refunded_amount": "0.00",
+        "net_amount": "0.00"
+      },
+      {
+        "name": "皮肤科",
+        "registration_count": 0,
+        "charged_amount": "0.00",
+        "refunded_amount": "0.00",
+        "net_amount": "0.00"
+      }
+    ]
+  }
+}

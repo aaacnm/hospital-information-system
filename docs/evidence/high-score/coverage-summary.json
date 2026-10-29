@@ -1,0 +1,13 @@
+{
+  "scope": "backend/app statements",
+  "totals": {
+    "covered_lines": 1412,
+    "num_statements": 1535,
+    "percent_covered": 91.9869706840391,
+    "percent_covered_display": "92",
+    "missing_lines": 123,
+    "excluded_lines": 0,
+    "percent_statements_covered": 91.9869706840391,
+    "percent_statements_covered_display": "92"
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "slides": 8,
+  "rendered_and_inspected_slides": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8
+  ],
+  "same_as_inspected_candidate": true,
+  "sha256": "b0c4697b8fbc360591d9b5b493d1015c8f13c09b1adfe4351b426632a3d97aaa",
+  "native_table_owner_slides": [
+    4,
+    6
+  ]
+}

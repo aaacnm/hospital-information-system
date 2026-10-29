@@ -30,9 +30,15 @@ def run_migrations_online() -> None:
         poolclass=pool.NullPool,
     )
     with connectable.connect() as connection:
+        if connection.dialect.name == "sqlite":
+            connection.exec_driver_sql("PRAGMA foreign_keys=OFF")
+            connection.commit()
         context.configure(connection=connection, target_metadata=target_metadata)
         with context.begin_transaction():
             context.run_migrations()
+        if connection.dialect.name == "sqlite":
+            if connection.exec_driver_sql("PRAGMA foreign_key_check").fetchone():
+                raise RuntimeError("迁移后外键检查未通过")
 
 
 if context.is_offline_mode():

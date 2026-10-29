@@ -1,7 +1,7 @@
 from datetime import date
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, File, Query, UploadFile, status
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 from sqlalchemy.orm import Session
 
 from app.db import get_db
@@ -10,6 +10,7 @@ from app.models.entities import UserRole
 from app.schemas.business import (
     AuditLogListResponse,
     AuditLogResponse,
+    ChargeInput,
     ChargeResponse,
     DispenseResponse,
     DrugCreate,
@@ -34,6 +35,7 @@ from app.services.business import (
     create_prescription,
     create_registration,
     dispense_prescription,
+    edit_prescription,
     import_drugs,
     list_drugs,
     list_patients,
@@ -42,6 +44,7 @@ from app.services.business import (
     submit_prescription,
     today_report,
 )
+from app.services.rules import business_date, day_bounds
 
 router = APIRouter(prefix="/api", tags=["business"])
 
@@ -94,10 +97,12 @@ def cancel_registration_route(
 @router.get("/patients", response_model=list[PatientResponse])
 def patients(
     db: Annotated[Session, Depends(get_db)],
-    _: Annotated[User, Depends(require_roles(UserRole.ADMIN, UserRole.DOCTOR, UserRole.CASHIER))],
+    user: Annotated[
+        User, Depends(require_roles(UserRole.ADMIN, UserRole.DOCTOR, UserRole.CASHIER))
+    ],
     keyword: str | None = Query(default=None, max_length=80),
 ) -> list[PatientResponse]:
-    return list_patients(db, keyword)
+    return list_patients(db, keyword, user)
 
 
 @router.post("/patients", response_model=PatientResponse, status_code=status.HTTP_201_CREATED)
@@ -145,10 +150,8 @@ def drug_import(
     db: Annotated[Session, Depends(get_db)],
     user: Annotated[User, Depends(require_roles(UserRole.ADMIN))],
 ) -> DrugImportResponse:
-    content = file.file.read()
+    content = file.file.read(2 * 1024 * 1024 + 1)
     if len(content) > 2 * 1024 * 1024:
-        from fastapi import HTTPException
-
         raise HTTPException(
             status_code=400, detail={"code": "CSV_TOO_LARGE", "message": "CSV 文件不能超过2MB"}
         )
@@ -160,9 +163,7 @@ def report_today(
     db: Annotated[Session, Depends(get_db)],
     _: Annotated[User, Depends(require_roles(UserRole.ADMIN))],
 ) -> ReportTodayResponse:
-    from datetime import date
-
-    return today_report(db, date.today())
+    return today_report(db, business_date())
 
 
 @router.post(
@@ -171,16 +172,26 @@ def report_today(
 def prescriptions(
     payload: PrescriptionCreate,
     db: Annotated[Session, Depends(get_db)],
-    user: Annotated[User, Depends(require_roles(UserRole.ADMIN, UserRole.DOCTOR))],
+    user: Annotated[User, Depends(require_roles(UserRole.DOCTOR))],
 ) -> PrescriptionResponse:
     return create_prescription(db, payload, user)
+
+
+@router.patch("/prescriptions/{prescription_id}", response_model=PrescriptionResponse)
+def edit_rx(
+    prescription_id: int,
+    payload: PrescriptionCreate,
+    db: Annotated[Session, Depends(get_db)],
+    user: Annotated[User, Depends(require_roles(UserRole.DOCTOR))],
+):
+    return edit_prescription(db, prescription_id, payload, user)
 
 
 @router.post("/prescriptions/{prescription_id}/submit", response_model=PrescriptionResponse)
 def submit(
     prescription_id: int,
     db: Annotated[Session, Depends(get_db)],
-    user: Annotated[User, Depends(require_roles(UserRole.ADMIN, UserRole.DOCTOR))],
+    user: Annotated[User, Depends(require_roles(UserRole.DOCTOR))],
 ) -> PrescriptionResponse:
     return submit_prescription(db, prescription_id, user)
 
@@ -190,8 +201,11 @@ def charge(
     prescription_id: int,
     db: Annotated[Session, Depends(get_db)],
     user: Annotated[User, Depends(require_roles(UserRole.ADMIN, UserRole.CASHIER))],
+    payload: ChargeInput | None = None,
 ) -> ChargeResponse:
-    return charge_prescription(db, prescription_id, user)
+    return charge_prescription(
+        db, prescription_id, user, payload.payment_method if payload else "现金"
+    )
 
 
 @router.post("/prescriptions/{prescription_id}/dispense", response_model=DispenseResponse)
@@ -209,13 +223,25 @@ def audit_logs(
     _: Annotated[User, Depends(require_roles(UserRole.ADMIN))],
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=50, ge=1, le=100),
+    user_id: int | None = None,
+    action: str | None = Query(default=None, max_length=80),
+    start_date: date | None = None,
+    end_date: date | None = None,
 ) -> AuditLogListResponse:
     from app.models import AuditLog
 
-    total = db.query(AuditLog).count()
+    query = db.query(AuditLog)
+    if user_id:
+        query = query.filter(AuditLog.user_id == user_id)
+    if action:
+        query = query.filter(AuditLog.action == action)
+    if start_date:
+        query = query.filter(AuditLog.created_at >= day_bounds(start_date)[0])
+    if end_date:
+        query = query.filter(AuditLog.created_at < day_bounds(end_date)[1])
+    total = query.count()
     items = (
-        db.query(AuditLog)
-        .order_by(AuditLog.created_at.desc(), AuditLog.id.desc())
+        query.order_by(AuditLog.created_at.desc(), AuditLog.id.desc())
         .offset((page - 1) * page_size)
         .limit(page_size)
         .all()

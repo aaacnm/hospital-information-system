@@ -22,6 +22,8 @@ def hash_password(password: str) -> str:
 
 
 def verify_password(password: str, hashed_password: str) -> bool:
+    if len(password.encode("utf-8")) > 72:
+        return False
     return password_hash.verify(password, hashed_password)
 
 
@@ -53,6 +55,7 @@ def get_current_user(
     user = db.query(User).filter(User.username == username).first()
     if user is None or user.status != UserStatus.ACTIVE.value:
         raise credentials_error
+    db.info["audit_user_id"] = user.id
     return user
 
 

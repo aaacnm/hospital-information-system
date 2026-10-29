@@ -1,0 +1,17 @@
+
+> hospital-information-system-web@0.1.0 build
+> tsc -b && vite build --outDir D:\rubbish\zhongjian\build\医院信息系统\frontend
+
+vite v7.3.7 building client environment for production...
+transforming...
+✓ 2083 modules transformed.
+
+(!) outDir D:\rubbish\zhongjian\build\医院信息系统\frontend is not inside project root and will not be emptied.
+Use --emptyOutDir to override.
+
+rendering chunks...
+computing gzip size...
+../../../zhongjian/build/医院信息系统/frontend/index.html                   0.51 kB │ gzip:   0.35 kB
+../../../zhongjian/build/医院信息系统/frontend/assets/index-Bn6JWXn8.css   37.54 kB │ gzip:   9.20 kB
+../../../zhongjian/build/医院信息系统/frontend/assets/index-BISWAFcz.js   358.65 kB │ gzip: 113.08 kB
+✓ built in 2.67s

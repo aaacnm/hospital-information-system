@@ -1,0 +1,40 @@
+..........................................                               [100%]
+============================== warnings summary ===============================
+..\..\zhongjian\envs\ҽԺ��Ϣϵͳ\dev\Lib\site-packages\starlette\testclient.py:40
+  D:\rubbish\zhongjian\envs\ҽԺ��Ϣϵͳ\dev\Lib\site-packages\starlette\testclient.py:40: DeprecationWarning: The anyio.abc.BlockingPortal alias is deprecated, use anyio.from_thread.BlockingPortal instead.
+    _PortalFactoryType = typing.Callable[[], typing.ContextManager[anyio.abc.BlockingPortal]]
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+
+---------- coverage: platform win32, python 3.12.14-final-0 ----------
+Name                               Stmts   Miss  Cover   Missing
+----------------------------------------------------------------
+backend\app\__init__.py                0      0   100%
+backend\app\ai\__init__.py             0      0   100%
+backend\app\ai\provider.py            33     19    42%   20, 25-29, 32-49, 53-59
+backend\app\config.py                 28      1    96%   28
+backend\app\db.py                     38      0   100%
+backend\app\main.py                   39      7    82%   49-56
+backend\app\models\__init__.py         2      0   100%
+backend\app\models\entities.py       181      0   100%
+backend\app\prompts\__init__.py        0      0   100%
+backend\app\routers\__init__.py        0      0   100%
+backend\app\routers\admin.py           8      1    88%   16
+backend\app\routers\auth.py           31      0   100%
+backend\app\routers\business.py       76      5    93%   124, 154, 231, 235, 237
+backend\app\routers\triage.py         13      0   100%
+backend\app\routers\workbench.py     153     19    88%   87, 93, 145, 147, 149, 154, 181, 213, 219, 221, 240, 258, 260, 262, 282, 287-288, 343, 345
+backend\app\schemas\__init__.py        0      0   100%
+backend\app\schemas\auth.py           16      0   100%
+backend\app\schemas\business.py      186      0   100%
+backend\app\schemas\triage.py          9      0   100%
+backend\app\security.py               46      3    93%   51-53
+backend\app\services\__init__.py       0      0   100%
+backend\app\services\business.py     302     43    86%   76-78, 107-111, 136, 157-161, 167, 179, 198, 258, 320, 322, 324, 329, 365, 375, 377, 381, 383, 404-405, 436, 438, 440, 465, 467, 477, 515, 519, 546-547, 559-560, 622, 628
+backend\app\services\rules.py         20      0   100%
+backend\app\services\triage.py        44      3    93%   48, 57, 60
+----------------------------------------------------------------
+TOTAL                               1225    101    92%
+Coverage JSON written to file D:/rubbish/zhongjian/build/ҽԺ��Ϣϵͳ/coverage.json
+
+42 passed, 1 warning in 73.34s (0:01:13)

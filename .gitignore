@@ -24,6 +24,7 @@ test-results/
 *.sqlite3
 *.db
 *.log
+local-secret.txt
 
 # IDE and OS files
 .idea/

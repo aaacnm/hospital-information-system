@@ -1,0 +1,47 @@
+{
+  "scope": "本机虚构小样本，仅这些查询，不代表生产规模计划",
+  "plans": [
+    {
+      "name": "charge-date",
+      "sql": "SELECT id,amount FROM charge_orders WHERE paid_at>=? AND paid_at<?",
+      "plan": [
+        {
+          "id": 3,
+          "parent": 0,
+          "notused": 162,
+          "detail": "SEARCH charge_orders USING INDEX ix_charge_paid_at (paid_at>? AND paid_at<?)"
+        }
+      ]
+    },
+    {
+      "name": "audit-date",
+      "sql": "SELECT id,user_id,action FROM audit_logs WHERE created_at>=? AND created_at<? ORDER BY created_at DESC,id DESC LIMIT 20",
+      "plan": [
+        {
+          "id": 5,
+          "parent": 0,
+          "notused": 162,
+          "detail": "SEARCH audit_logs USING INDEX ix_audit_time_id (created_at>? AND created_at<?)"
+        }
+      ]
+    },
+    {
+      "name": "stock-batch",
+      "sql": "SELECT id,drug_id,quantity,expiry_date FROM drug_stocks WHERE drug_id IN (?,?) ORDER BY expiry_date,id",
+      "plan": [
+        {
+          "id": 4,
+          "parent": 0,
+          "notused": 71,
+          "detail": "SEARCH drug_stocks USING INDEX ix_drug_stocks_drug_id (drug_id=?)"
+        },
+        {
+          "id": 31,
+          "parent": 0,
+          "notused": 0,
+          "detail": "USE TEMP B-TREE FOR ORDER BY"
+        }
+      ]
+    }
+  ]
+}

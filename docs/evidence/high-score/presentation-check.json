@@ -1,0 +1,30 @@
+{
+  "slides": 10,
+  "rendered_and_inspected_slides": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10
+  ],
+  "font": "Microsoft YaHei",
+  "native_table_owner_slides": [
+    6,
+    7
+  ],
+  "native_chart_owner_slides": [
+    8
+  ],
+  "chart_source": "Fictional teaching database snapshot, 2026-10-23 to 2026-10-29",
+  "chart_workbook_snapshot_added": true,
+  "package_integrity": "pass",
+  "layout_findings": 0,
+  "native_chart_validation": true,
+  "sha256": "033c691c5df34134566868bab02051dc75c1f45dd258120a91b8613f24df7837",
+  "native_powerpoint_opened": false
+}

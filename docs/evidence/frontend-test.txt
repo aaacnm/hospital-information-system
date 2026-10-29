@@ -1,0 +1,19 @@
+
+> hospital-information-system-web@0.1.0 test
+> vitest run --passWithNoTests
+
+
+ RUN  v3.2.7 D:/rubbish/医院信息系统/代码/frontend
+
+ ✓ tests/api-client.test.ts (5 tests) 15ms
+ ✓ tests/module-placeholder.test.tsx (1 test) 34ms
+ ✓ tests/auth-routing.test.tsx (3 tests) 272ms
+ ✓ tests/triage-page.test.tsx (3 tests) 343ms
+ ✓ tests/business-pages.test.tsx (2 tests) 318ms
+ ✓ tests/login-page.test.tsx (2 tests) 430ms
+   ✓ LoginPage > opens the workbench when a different role logs in from an old protected page  337ms
+
+ Test Files  6 passed (6)
+      Tests  16 passed (16)
+   Start at  17:18:19
+   Duration  3.14s (transform 468ms, setup 2.36s, collect 1.33s, tests 1.41s, environment 6.91s, prepare 963ms)

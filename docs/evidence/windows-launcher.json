@@ -1,0 +1,51 @@
+{
+  "Date": "2026-10-29",
+  "Platform": "Windows PowerShell 5.1",
+  "TrackedPids": [
+    129400,
+    158768,
+    181320,
+    175608,
+    44284,
+    176156,
+    165040,
+    175408,
+    170192,
+    166588
+  ],
+  "RemainingProcesses": [],
+  "Port8000And8001Listeners": [],
+  "Scenarios": [
+    "CMD startup and real API health",
+    "Repeated start reuses instance",
+    "Occupied port selects 8001",
+    "Stopping B keeps A healthy",
+    "Stale unrelated PID is not stopped",
+    "Repeated stop is harmless",
+    "Restart keeps created fictional patient",
+    "Default project data folder and saved environment"
+  ],
+  "BrowserOpenedDuringTests": false,
+  "FreshMachineDependencyInstallTested": false,
+  "ProjectContractTests": 3,
+  "Ruff": "passed",
+  "ProductionWebBuild": "passed",
+  "RuntimeOrDependencyBundleCreated": false,
+  "Measurements": [
+    {
+      "Path": "D:\\rubbish\\医院信息系统\\代码\\frontend\\dist",
+      "Files": 3,
+      "Bytes": 444735.0
+    },
+    {
+      "Path": "D:\\rubbish\\医院信息系统\\代码\\demo-data",
+      "Files": 9,
+      "Bytes": 305818.0
+    },
+    {
+      "Path": "D:\\rubbish\\zhongjian\\temp\\医院信息系统\\click-launch-20261029",
+      "Files": 604,
+      "Bytes": 4552029.0
+    }
+  ]
+}

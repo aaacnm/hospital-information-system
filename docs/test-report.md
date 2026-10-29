@@ -6,13 +6,13 @@
 
 | 检查 | 结果 | 证据位置（docs/evidence/high-score/） |
 |---|---|---|
-| 后端/契约pytest | 46 passed，1个依赖弃用警告，76.28秒 | pytest-result.txt |
-| 应用语句覆盖率 | 1535条，覆盖1412条，91.99% | coverage-summary.json |
-| 收费列表增加处方状态后复测 | 4项相关用例通过 | query-regression.txt |
-| Ruff检查/格式 | 通过，48个文件格式正常 | ruff-result.txt |
-| 前端ESLint / TypeScript | 通过 | frontend-lint.txt、frontend-typecheck.txt |
-| Vitest | 8个文件，20 passed | frontend-test.txt |
-| 前端生产构建 | 通过，JS约391.60kB、CSS约52.63kB（未gzip） | frontend-build.txt |
+| 后端/契约pytest | 47 passed，1个依赖弃用警告，66.27秒 | 本轮终端结果；覆盖率证据沿用上一轮 |
+| 应用语句覆盖率 | 1535条，覆盖1412条，91.99%（上一轮结果，本轮未重新生成） | coverage-summary.json |
+| 收费列表增加处方状态后复测 | 4项相关用例通过（上一轮） | query-regression.txt |
+| Ruff检查/格式 | 通过，49个文件格式正常 | 本轮终端结果 |
+| 前端ESLint / TypeScript | 通过 | 本轮终端结果 |
+| Vitest | 8个文件，20 passed | 本轮终端结果 |
+| 前端生产构建 | 通过，JS约403.16kB、CSS约57.34kB（未gzip） | 本轮终端结果 |
 | 展示场景API读取 | 12项200，含四角色、文书、时间线、凭证、预警和流水 | showcase-api-evidence.json |
 | 新版PPT | 10页，逐页渲染检查，可编辑表格和图表 | presentation-check.json |
 
@@ -26,11 +26,19 @@
 - 前端直接验证文书保存后提示不消失、已发药不显示退费按钮、退费后记录更新、库存预警/流水切换。
 - 表单label与真实select使用htmlFor/id关联，修正旧CI患者精确标签定位失败的原因。
 
-原有并发、最后号源/库存争抢、重复药品汇总、库存不足回滚、权限与脱敏用例继续包含在46项中。
+原有并发、最后号源/库存争抢、重复药品汇总、库存不足回滚、权限与脱敏用例继续包含在47项中。
+
+## 本轮界面改版复测（2026-10-29）
+
+- 后端 pytest 47 passed，1个依赖弃用警告，66.27秒；Ruff check 与 format 通过（49个文件）。
+- 前端 ESLint、TypeScript 通过；Vitest 8个文件 20 passed；生产构建通过。
+- Chrome DevTools 在临时 `127.0.0.1:8021` 展示实例复验：登录、管理员/医生工作台、收费明细弹窗、挂号列表、接诊看板、经营看板、处方开方表单、收费记录退费弹窗、账号禁用确认。
+- 浏览器检查中发现并修正：工作台金额未固定两位小数、登录卡片首屏偏高、核对弹窗表格横向溢出、退费操作按钮位置不统一。
+- 未重新生成覆盖率，91.99%为上一轮结果；打印预览、窄屏逐页布局及其余页面仍需现场核对。
 
 ## 浏览器与CI边界
 
-新页面浏览器视觉与交互验收尚未完成。Chrome DevTools专用配置被占用，用户明确选择“先完成开发，稍后再验收页面”。本版未新建浏览器标签页，未改用Playwright或其他工具绕过，也未取得新版页面截图或实际打印结果。旧版浏览器主线证据仍在evidence/browser-mainline.md，不能代替本版验收。
+本轮已完成主要业务页面的浏览器视觉复验，但仍未宣称所有页面和打印预览全部验收完成。Chrome DevTools 使用临时演示实例和独立标签页，结束后关闭；未改用Playwright或其他工具绕过。旧版浏览器主线证据仍在evidence/browser-mainline.md，不能代替本轮逐页验收。
 
 基线0a2ad39的远程CI：后端、前端、项目契约、Docker配置/启动检查通过；Playwright主流程失败于getByLabel('患者', {exact:true})。本版已修正label关系并更新文书/报表步骤，新CI结果以本次提交关联的运行记录为准，此处不将基线结果当作新版CI结果。
 

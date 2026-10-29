@@ -1,10 +1,11 @@
 import csv
 import io
+from datetime import date
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query
 from fastapi.responses import Response
-from sqlalchemy import or_
+from sqlalchemy import func, or_
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.db import get_db
@@ -115,12 +116,29 @@ def drug_list(
         query = query.filter(
             or_(Drug.generic_name.contains(keyword[:120]), Drug.trade_name.contains(keyword[:120]))
         )
-    return paginate(
-        query.order_by(Drug.id),
-        page,
-        page_size,
-        lambda row: DrugResponse.model_validate(row).model_dump(mode="json"),
-    )
+    total = query.count()
+    rows = query.order_by(Drug.id).offset((page - 1) * page_size).limit(page_size).all()
+    ids = [row.id for row in rows]
+    available: dict[int, int] = {}
+    if ids:
+        available = {
+            drug_id: int(quantity)
+            for drug_id, quantity in db.query(
+                DrugStock.drug_id, func.coalesce(func.sum(DrugStock.quantity), 0)
+            )
+            .filter(
+                DrugStock.drug_id.in_(ids),
+                DrugStock.expiry_date >= business_date(),
+            )
+            .group_by(DrugStock.drug_id)
+            .all()
+        }
+    items = []
+    for row in rows:
+        data = DrugResponse.model_validate(row).model_dump(mode="json")
+        data["available_stock"] = available.get(row.id, 0)
+        items.append(data)
+    return {"items": items, "total": total, "page": page, "page_size": page_size}
 
 
 @router.get("/registrations")
@@ -128,6 +146,8 @@ def registration_list(
     db: DB,
     user: Current,
     keyword: str = "",
+    visit_date: date | None = None,
+    status: str | None = None,
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
 ):
@@ -150,6 +170,12 @@ def registration_list(
         query = query.filter(
             or_(Patient.name.contains(keyword[:80]), Patient.patient_no.contains(keyword[:80]))
         )
+    if visit_date is not None:
+        query = query.join(Schedule, RegistrationOrder.schedule_id == Schedule.id).filter(
+            Schedule.visit_date == visit_date
+        )
+    if status:
+        query = query.filter(RegistrationOrder.status == status)
 
     def encode(row):
         return {
@@ -192,12 +218,24 @@ def prescription_list(
     db: DB,
     user: Current,
     status: str | None = None,
+    keyword: str = "",
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
 ):
     query = prescription_query(db, user)
     if status:
         query = query.filter(Prescription.status == status)
+    if keyword:
+        query = (
+            query.join(RegistrationOrder, Prescription.registration_id == RegistrationOrder.id)
+            .join(Patient, RegistrationOrder.patient_id == Patient.id)
+            .filter(
+                or_(
+                    Patient.name.contains(keyword[:80]),
+                    Patient.patient_no.contains(keyword[:80]),
+                )
+            )
+        )
     return paginate(
         query.order_by(Prescription.id.desc()),
         page,
@@ -280,22 +318,50 @@ def stock_create(
 
 @router.get("/workload")
 def workload(db: DB, user: Current):
+    today = business_date()
     if user.role == "admin":
-        return today_report(db, business_date())
+        report = today_report(db, today)
+        report["pending_charge_count"] = (
+            db.query(Prescription).filter(Prescription.status == "待收费").count()
+        )
+        report["pending_dispense_count"] = (
+            db.query(Prescription).filter(Prescription.status == "已收费").count()
+        )
+        return report
     query = db.query(Prescription)
     if user.role == "doctor":
         if user.doctor is None:
             raise _error("DOCTOR_PROFILE_REQUIRED", "未绑定医生", 403)
         query = query.filter(Prescription.doctor_id == user.doctor.id)
+        today_visits = (
+            db.query(RegistrationOrder)
+            .join(Schedule, RegistrationOrder.schedule_id == Schedule.id)
+            .filter(
+                RegistrationOrder.doctor_id == user.doctor.id,
+                Schedule.visit_date == today,
+            )
+        )
         return {
-            "date": business_date(),
+            "date": today,
             "draft_count": query.filter(Prescription.status == "草稿").count(),
             "submitted_count": query.filter(Prescription.status != "草稿").count(),
+            "waiting_count": today_visits.filter(RegistrationOrder.status == "候诊").count(),
+            "active_count": today_visits.filter(RegistrationOrder.status == "就诊中").count(),
+            "completed_count": today_visits.filter(RegistrationOrder.status == "已完成").count(),
         }
-    target = "待收费" if user.role == "cashier" else "已收费"
+    report = today_report(db, today)
+    if user.role == "cashier":
+        return {
+            "date": today,
+            "pending_count": query.filter(Prescription.status == "待收费").count(),
+            "today_registration_count": report["registration_count"],
+            "today_charged_amount": report["charged_amount"],
+            "today_refunded_amount": report["refunded_amount"],
+        }
     return {
-        "date": business_date(),
-        "pending_count": query.filter(Prescription.status == target).count(),
+        "date": today,
+        "pending_count": query.filter(Prescription.status == "已收费").count(),
+        "today_dispensed_count": report["dispensed_count"],
     }
 
 

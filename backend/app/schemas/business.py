@@ -85,6 +85,7 @@ class DrugResponse(BaseModel):
     insurance_type: str | None
     unit_price: Decimal
     stock_qty: int
+    available_stock: int | None = None
     expiry_date: date | None
     status: str
 

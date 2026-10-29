@@ -23,13 +23,15 @@
 
 在 http://127.0.0.1:8000 展示。首次准备当天的独立虚构场景库；同一天再次启动保留操作，换一天使用新的日期目录，不覆盖旧数据。7天教学记录让图表、待办和预警首次打开就有内容。统一密码Demo123!，账号见下表。
 
+界面本版统一为白底、淡紫蓝渐变、近黑文字与胶囊按钮、圆角卡片的极简基调；收费、发药、退费改为核对弹窗，列表补充状态筛选、患者搜索、加载态和空状态，药品下拉显示未过期可用库存。
+
 - 展示库：`D:\rubbish\zhongjian\artifacts\医院信息系统\高分升级-20261029\demo\当天日期\hospital.sqlite`。
 - 展示前端：`D:\rubbish\zhongjian\build\医院信息系统\high-score\frontend`，首次缺少构建时自动构建，也可加`-Build`重建。
 - 当前终端Ctrl+C停止。端口被占用时用`-Port 8001`，不终止原服务。
 - 需要全新练习库：用`start-demo.ps1 -Showcase -DatabasePath 新的绝对路径 -WebPath 上述展示前端目录`，不要删除旧库。
 - 新版PPT：`deliverables/和序HIS-功能展示版.pptx`；[演示操作稿](docs/demo-script.md)、[课程报告](docs/课程设计报告.md)。
 
-本版前端20项、后端46项测试通过。用户选择将新版页面浏览器验收延后，尚未声称完成页面视觉/打印验收。提交、推送与PR状态以远程仓库记录为准。
+本版前端20项、后端47项测试通过，ESLint、TypeScript、Ruff 与生产构建通过。本轮已用 Chrome DevTools 复验登录、管理员/医生工作台、收费明细弹窗、挂号与接诊看板、经营看板、处方开方表单、收费记录退费弹窗和账号禁用确认等主要页面；打印预览与未逐页检查的页面仍需现场核对。提交、推送与PR状态以远程仓库记录为准。
 
 ## 技术与业务范围
 React 19 + Vite + TypeScript；FastAPI + SQLAlchemy + Alembic；本机 SQLite。

@@ -1,3 +1,24 @@
 import {Badge} from './ui/badge';
-const tones:Record<string,string>={已退费:'bg-rose-50 text-rose-700 border-rose-200',候诊:'bg-sky-50 text-sky-700 border-sky-200',就诊中:'bg-indigo-50 text-indigo-700 border-indigo-200',草稿:'bg-slate-100 text-slate-600 border-slate-200',待收费:'bg-amber-50 text-amber-700 border-amber-200',已收费:'bg-blue-50 text-blue-700 border-blue-200',已发药:'bg-emerald-50 text-emerald-700 border-emerald-200',已完成:'bg-emerald-50 text-emerald-700 border-emerald-200',已取消:'bg-slate-100 text-slate-500 border-slate-200'};
-export function StateBadge({value}:{value:string}){return <Badge variant="outline" className={tones[value]||''}><span className="size-1.5 rounded-full bg-current opacity-70"/>{value}</Badge>;}
+
+const tones: Record<string, string> = {
+  已退费: 'state-refund',
+  候诊: 'state-waiting',
+  就诊中: 'state-active',
+  草稿: 'state-draft',
+  待收费: 'state-pending',
+  已收费: 'state-paid',
+  已发药: 'state-done',
+  已完成: 'state-done',
+  已取消: 'state-muted',
+  启用: 'state-done',
+  禁用: 'state-muted',
+};
+
+export function StateBadge({value}: {value: string}) {
+  return (
+    <Badge variant="outline" className={'state-badge ' + (tones[value] || 'state-muted')}>
+      <span className="size-1.5 rounded-full bg-current opacity-70"/>
+      {value}
+    </Badge>
+  );
+}

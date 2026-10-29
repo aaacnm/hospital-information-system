@@ -1,17 +1,96 @@
-import {useState,type FormEvent} from 'react';
+import {useState, type FormEvent} from 'react';
 import {useNavigate} from 'react-router-dom';
-import {Activity,ArrowRight,ClipboardCheck,LockKeyhole,ShieldCheck,Stethoscope,UsersRound,Pill} from 'lucide-react';
+import {Activity, ArrowRight, LockKeyhole, Pill, ShieldCheck, Sparkles, Stethoscope, UsersRound} from 'lucide-react';
 import {useAuth} from '../auth/AuthContext';
 import {StatusMessage} from '../components/StatusMessage';
 import {Button} from '../components/ui/button';
 import {Input} from '../components/ui/input';
 import {Badge} from '../components/ui/badge';
-import {Card,CardContent} from '../components/ui/card';
+import {Card, CardContent} from '../components/ui/card';
 
-export function LoginPage(){
- const {login,isLoading,error,clearError}=useAuth();const navigate=useNavigate();
- const [username,setUsername]=useState('');const [password,setPassword]=useState('');const [hasSubmitted,setHasSubmitted]=useState(false);
- async function submit(e:FormEvent<HTMLFormElement>){e.preventDefault();setHasSubmitted(true);clearError();try{await login(username.trim(),password);navigate('/',{replace:true});}catch{/* AuthContext displays the login error. */}}
- return <main className="login-shell"><section className="login-intro"><div className="login-brand"><span className="brand-mark"><Activity size={25}/></span><strong>和序 HIS<span>HOSPITAL INFORMATION SYSTEM</span></strong></div><div className="login-story"><Badge variant="outline" className="login-eyebrow"><span className="tiny-dot"/>门诊业务一体化工作台</Badge><h1>让诊疗有序，<br/><span>让信息可追溯。</span></h1><p>连接患者、医生、收费与药房。<br/>从一次挂号开始，让每一步都清楚、可靠。</p><div className="login-flow">{[{name:'患者挂号',icon:UsersRound},{name:'医生开方',icon:Stethoscope},{name:'划价收费',icon:ClipboardCheck},{name:'药房发药',icon:Pill}].map((step,i)=><div key={step.name}><span className="login-step"><step.icon size={21}/></span><strong>{step.name}</strong>{i<3&&<ArrowRight className="login-arrow" size={17}/>}</div>)}</div><div className="login-assurance"><ShieldCheck size={18}/><span>角色权限 · 事务一致性 · 操作审计</span></div></div><small className="login-copyright">医院信息系统课程设计 · 本机演示版</small></section>
- <section className="login-form-area"><div className="login-form-caption"><Badge variant="secondary">LOCAL DEMO</Badge><span>仅使用虚构演示数据</span></div><Card className="login-card"><CardContent className="p-0"><div className="login-lock"><LockKeyhole size={23}/></div><h2 id="login-title">欢迎回来</h2><p className="login-description">登录你的账号，开始今天的工作。</p><form aria-labelledby="login-title" onSubmit={submit}><label htmlFor="username">用户名</label><Input id="username" name="username" autoComplete="username" value={username} onChange={e=>setUsername(e.target.value)} required maxLength={64} placeholder="请输入账号"/><label htmlFor="password">密码</label><Input id="password" name="password" type="password" autoComplete="current-password" value={password} onChange={e=>setPassword(e.target.value)} required maxLength={128} placeholder="请输入密码"/>{hasSubmitted&&error&&<StatusMessage tone="error" title="登录未完成">{error}</StatusMessage>}<Button className="button-full h-11" disabled={isLoading}>{isLoading?'正在验证…':'登录工作台'}<ArrowRight size={16}/></Button></form><div className="demo-account-section"><div className="demo-account-title"><span>选择演示身份</span><small>自动填入演示账号</small></div><div className="demo-accounts">{[{name:'管理员',account:'admin'},{name:'医生',account:'doctor'},{name:'收费员',account:'cashier'},{name:'药师',account:'pharmacist'}].map(a=><Button key={a.account} type="button" variant="outline" size="sm" onClick={()=>{setUsername(a.account+'.demo');setPassword('Demo123!');clearError();}}>{a.name}</Button>)}</div></div><p className="login-footnote"><ShieldCheck size={14}/>请勿录入真实患者身份和临床信息</p></CardContent></Card><p className="login-bottom">和序 HIS · 门诊业务闭环系统</p></section></main>;
+export function LoginPage() {
+  const {login, isLoading, error, clearError} = useAuth();
+  const navigate = useNavigate();
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [hasSubmitted, setHasSubmitted] = useState(false);
+
+  async function submit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setHasSubmitted(true);
+    clearError();
+    try {
+      await login(username.trim(), password);
+      navigate('/', {replace: true});
+    } catch {
+      // AuthContext displays the login error.
+    }
+  }
+
+  return (
+    <main className="login-shell">
+      <header className="login-nav">
+        <div className="login-brand">
+          <span className="brand-mark"><Activity size={19}/></span>
+          <strong>和序 HIS</strong>
+          <span className="login-brand-sub">门诊业务管理系统</span>
+        </div>
+        <Badge variant="outline" className="login-badge"><span className="tiny-dot"/>本机演示 · 虚构数据</Badge>
+      </header>
+
+      <section className="login-hero">
+        <Badge variant="outline" className="login-eyebrow"><Sparkles size={12}/>门诊业务一体化工作台</Badge>
+        <h1>让门诊业务<br/><span>清晰而有序。</span></h1>
+        <p>连接患者、医生、收费与药房。<br/>从一次挂号开始，让每一步都清楚、可靠。</p>
+      </section>
+
+      <Card className="login-card">
+        <CardContent className="p-0">
+          <div className="login-card-head">
+            <div className="login-lock"><LockKeyhole size={19}/></div>
+            <div>
+              <h2 id="login-title">登录工作台</h2>
+              <p>使用演示账号，或输入你自己的账号。</p>
+            </div>
+          </div>
+          <form aria-labelledby="login-title" onSubmit={submit}>
+            <label htmlFor="username">用户名</label>
+            <Input id="username" name="username" autoComplete="username" value={username} onChange={e => setUsername(e.target.value)} required maxLength={64} placeholder="请输入账号"/>
+            <label htmlFor="password">密码</label>
+            <Input id="password" name="password" type="password" autoComplete="current-password" value={password} onChange={e => setPassword(e.target.value)} required maxLength={128} placeholder="请输入密码"/>
+            {hasSubmitted && error && <StatusMessage tone="error" title="登录未完成">{error}</StatusMessage>}
+            <Button className="button-full" disabled={isLoading}>
+              {isLoading ? '正在验证…' : '登录工作台'}
+              <ArrowRight size={16}/>
+            </Button>
+          </form>
+          <div className="demo-account-section">
+            <div className="demo-account-title"><span>选择演示身份</span><small>自动填入演示账号</small></div>
+            <div className="demo-accounts">
+              {[{name: '管理员', account: 'admin'}, {name: '医生', account: 'doctor'}, {name: '收费员', account: 'cashier'}, {name: '药师', account: 'pharmacist'}].map(a => (
+                <Button key={a.account} type="button" variant="outline" size="sm" onClick={() => {setUsername(a.account + '.demo'); setPassword('Demo123!'); clearError();}}>
+                  {a.name}
+                </Button>
+              ))}
+            </div>
+          </div>
+          <p className="login-footnote"><ShieldCheck size={13}/>请勿录入真实患者身份和临床信息</p>
+        </CardContent>
+      </Card>
+
+      <div className="login-features">
+        {[
+          {icon: UsersRound, title: '患者与号源', text: '建档、排班、挂号一条线'},
+          {icon: Stethoscope, title: '接诊与开方', text: '文书、诊断、处方自动划价'},
+          {icon: Pill, title: '收费与发药', text: '批次库存与退费全程留痕'},
+        ].map(item => (
+          <div className="login-feature" key={item.title}>
+            <item.icon size={18} strokeWidth={1.7}/>
+            <div><strong>{item.title}</strong><small>{item.text}</small></div>
+          </div>
+        ))}
+      </div>
+      <p className="login-footer">和序 HIS · 门诊业务闭环系统 · 仅用于课程演示</p>
+    </main>
+  );
 }
